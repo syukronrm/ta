@@ -1,0 +1,128 @@
+import scala.collection.immutable.Set
+import archery._
+import scalax.collection.edge.WUnDiEdge
+import scalax.collection.edge.Implicits._
+import scalax.collection.Graph
+import scalax.collection.GraphPredef._
+import scalax.collection.Graph
+import scalax.collection.edge.WUnDiEdge
+
+case class UTuple(x: Double, y: Double, p: Double)
+case class GridLocation(x: Int, y: Int) {}
+case class Node(id: Int, x: Double, y: Double, tree: RTree[UTuple])
+case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation])
+case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
+
+abstract class UncertainStream {
+  def getId: Int
+}
+case class StreamInsert(id: Int, edgeId: Int, pos: Double, tuples: Set[UTuple])
+  extends UncertainStream {
+  override def getId: Int = id
+}
+case class StreamDelete(id: Int)
+  extends UncertainStream {
+  override def getId: Int = id
+}
+
+object HelloWorld {
+  val table_nodes: Set[Node] = Set(
+    Node(1, 2, 1, RTree()),
+    Node(2, 19, 1, RTree()),
+    Node(3, 3, 3, RTree()),
+    Node(4, 9, 5, RTree()),
+    Node(5, 16, 5, RTree()),
+    Node(6, 3, 8, RTree()),
+    Node(7, 8, 12, RTree()),
+    Node(8, 16, 12, RTree()),
+  )
+
+  val table_edges: Set[Edge] = Set(
+    Edge(1, 1, 2, None, None),
+    Edge(2, 1, 3, None, None),
+    Edge(3, 2, 5, None, None),
+    Edge(4, 3, 4, None, None),
+    Edge(4, 3, 6, None, None),
+    Edge(5, 4, 5, None, None),
+    Edge(6, 4, 7, None, None),
+    Edge(7, 5, 8, None, None),
+    Edge(8, 6, 7, None, None),
+    Edge(9, 7, 8, None, None),
+  )
+
+  val streams: Set[UncertainStream] = Set(
+    StreamInsert(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3))),
+    StreamInsert(1, 2, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3))),
+    StreamInsert(2, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4))),
+    StreamInsert(3, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5))),
+//    StreamDelete(1)
+  )
+
+  def addEdge(graph: Graph[Node, WUnDiEdge], nodei: Node, nodej: Node, weight: Double): Graph[Node, WUnDiEdge] = {
+    graph ++ Graph(nodei ~ nodej % weight)
+  }
+
+
+  def addEdges(graph: Graph[Node, WUnDiEdge], nodes: Set[Node], edges: Set[Edge]): Graph[Node, WUnDiEdge] = {
+    edges.foldLeft(graph)((acc, e) => {
+      val nodei = nodes.find((n: Node) => n.id == e.nodei).get
+      val nodej = nodes.find((n: Node) => n.id == e.nodej).get
+
+      addEdge(acc, nodei, nodej, e.length.get)
+    })
+  }
+
+  def addGraphsFromNode(graph: Graph[Node, WUnDiEdge], grid: GridIndex, node: Node): Graph[Node, WUnDiEdge] = {
+    val gridLoc = grid.getGridLocation(node)
+    val EdgesNodes(edges, nodes) = grid.getGridEdges(grid, gridLoc)
+
+    addEdges(graph, nodes, edges)
+  }
+
+  def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
+    var gTmp = GridGraph
+    var queue: scala.collection.mutable.Queue[Node] = scala.collection.mutable.Queue[Node]()
+    var graph: Graph[Node, WUnDiEdge] = Graph()
+
+    var updatedNodes: Set[Node] = Set()
+    var visitedNodes: Set[Node] = Set()
+
+    val edgeId: Int = uncertainData match {
+      case StreamInsert(_, edgeId_, _, _) => edgeId_
+    }
+
+    var edge: Edge = grid.findEdgeById(edgeId).get
+
+    // enqueue
+    val nodei = grid.findNodeById(edge.nodei).get
+    val nodej = grid.findNodeById(edge.nodej).get
+
+    queue.enqueue(nodei)
+    queue.enqueue(nodej)
+
+    while (queue.nonEmpty) {
+      var node = queue.dequeue()
+
+      graph = addGraphsFromNode(graph, grid, node)
+
+      // TODO CALCULATE node TO edge
+      // calculateDistance(graph, node, uncertainData)
+    }
+
+    grid
+  }
+
+  def main(args: Array[String]): Unit = {
+    var grid = new GridIndex()
+
+    grid.addNodes(table_nodes)
+    grid.addEdges(table_edges)
+
+    grid.calculateEdgesLengthAndGrid()
+
+    streams.foldLeft(streams) {(acc, stream) => {
+      theAlgorithm(grid, stream)
+      acc
+    }}
+  }
+}

@@ -3,6 +3,7 @@ import archery._
 import scalax.collection.edge.{WLkUnDiEdge, WUnDiEdge}
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
+import scalax.collection.edge.Implicits._
 import scalax.collection.Graph
 import scalax.collection.edge.WUnDiEdge
 
@@ -77,6 +78,29 @@ object HelloWorld {
     addEdges(graph, nodes, edges)
   }
 
+
+  def n(g: Graph[Node, WLkUnDiEdge], outer: Node): g.NodeT = g get outer
+
+  def calculateDistance(graph: Graph[Node, WLkUnDiEdge], obj: StreamInsert, node: Node): Double = {
+    val fakeNode = Node(0, 0, 0, RTree())
+    val edgeFakeNode = graph.edges.find(_.label == "b").get
+
+    val node1 = edgeFakeNode._1.toOuter
+    val lenToNode1 = edgeFakeNode.weight * obj.pos
+
+    val node2 = edgeFakeNode._2.toOuter
+    val lenToNode2 = edgeFakeNode.weight * (1 - obj.pos)
+
+    val graphNode1: Graph[Node, WLkUnDiEdge] = Graph(WLkUnDiEdge(node1, fakeNode)(lenToNode1, 0))
+    val graphNode2: Graph[Node, WLkUnDiEdge] = Graph(WLkUnDiEdge(node1, fakeNode)(lenToNode2, 0))
+
+    var addedGraph = graph ++ graphNode1 ++ graphNode2
+    println(addedGraph)
+
+    val spO = n(addedGraph, fakeNode) shortestPathTo n(addedGraph, node)
+    spO.get.weight
+  }
+
   def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
     var gTmp = GridGraph
     var queue: scala.collection.mutable.Queue[Node] = scala.collection.mutable.Queue[Node]()
@@ -102,8 +126,7 @@ object HelloWorld {
       var node = queue.dequeue()
 
       graph = addGraphsFromNode(graph, grid, node)
-      // TODO CALCULATE node TO edge
-      // calculateDistance(graph, node, uncertainData)
+      val len = calculateDistance(graph, uncertainData.asInstanceOf[StreamInsert], node)
     }
 
     grid

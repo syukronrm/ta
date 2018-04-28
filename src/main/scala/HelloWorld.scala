@@ -1,7 +1,6 @@
 import scala.collection.immutable.Set
 import archery._
-import scalax.collection.edge.WUnDiEdge
-import scalax.collection.edge.Implicits._
+import scalax.collection.edge.{WLkUnDiEdge, WUnDiEdge}
 import scalax.collection.Graph
 import scalax.collection.GraphPredef._
 import scalax.collection.Graph
@@ -58,21 +57,20 @@ object HelloWorld {
 //    StreamDelete(1)
   )
 
-  def addEdge(graph: Graph[Node, WUnDiEdge], nodei: Node, nodej: Node, weight: Double): Graph[Node, WUnDiEdge] = {
-    graph ++ Graph(nodei ~ nodej % weight)
+  def addEdge(graph: Graph[Node, WLkUnDiEdge], nodei: Node, nodej: Node, weight: Double, key: Int): Graph[Node, WLkUnDiEdge] = {
+    graph ++ Graph(WLkUnDiEdge(nodei, nodej)(weight, key))
   }
 
-
-  def addEdges(graph: Graph[Node, WUnDiEdge], nodes: Set[Node], edges: Set[Edge]): Graph[Node, WUnDiEdge] = {
+  def addEdges(graph: Graph[Node, WLkUnDiEdge], nodes: Set[Node], edges: Set[Edge]): Graph[Node, WLkUnDiEdge] = {
     edges.foldLeft(graph)((acc, e) => {
       val nodei = nodes.find((n: Node) => n.id == e.nodei).get
       val nodej = nodes.find((n: Node) => n.id == e.nodej).get
 
-      addEdge(acc, nodei, nodej, e.length.get)
+      addEdge(acc, nodei, nodej, e.length.get, e.id)
     })
   }
 
-  def addGraphsFromNode(graph: Graph[Node, WUnDiEdge], grid: GridIndex, node: Node): Graph[Node, WUnDiEdge] = {
+  def addGraphsFromNode(graph: Graph[Node, WLkUnDiEdge], grid: GridIndex, node: Node): Graph[Node, WLkUnDiEdge] = {
     val gridLoc = grid.getGridLocation(node)
     val EdgesNodes(edges, nodes) = grid.getGridEdges(grid, gridLoc)
 
@@ -82,7 +80,7 @@ object HelloWorld {
   def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
     var gTmp = GridGraph
     var queue: scala.collection.mutable.Queue[Node] = scala.collection.mutable.Queue[Node]()
-    var graph: Graph[Node, WUnDiEdge] = Graph()
+    var graph: Graph[Node, WLkUnDiEdge] = Graph()
 
     var updatedNodes: Set[Node] = Set()
     var visitedNodes: Set[Node] = Set()
@@ -104,7 +102,6 @@ object HelloWorld {
       var node = queue.dequeue()
 
       graph = addGraphsFromNode(graph, grid, node)
-
       // TODO CALCULATE node TO edge
       // calculateDistance(graph, node, uncertainData)
     }

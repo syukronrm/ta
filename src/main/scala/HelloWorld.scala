@@ -83,7 +83,7 @@ object HelloWorld {
 
   def calculateDistance(graph: Graph[Node, WLkUnDiEdge], obj: StreamInsert, node: Node): Double = {
     val fakeNode = Node(0, 0, 0, RTree())
-    val edgeFakeNode = graph.edges.find(_.label == "b").get
+    val edgeFakeNode = graph.edges.find(_.label == obj.edgeId).get
 
     val node1 = edgeFakeNode._1.toOuter
     val lenToNode1 = edgeFakeNode.weight * obj.pos
@@ -92,10 +92,9 @@ object HelloWorld {
     val lenToNode2 = edgeFakeNode.weight * (1 - obj.pos)
 
     val graphNode1: Graph[Node, WLkUnDiEdge] = Graph(WLkUnDiEdge(node1, fakeNode)(lenToNode1, 0))
-    val graphNode2: Graph[Node, WLkUnDiEdge] = Graph(WLkUnDiEdge(node1, fakeNode)(lenToNode2, 0))
+    val graphNode2: Graph[Node, WLkUnDiEdge] = Graph(WLkUnDiEdge(node2, fakeNode)(lenToNode2, 0))
 
-    var addedGraph = graph ++ graphNode1 ++ graphNode2
-    println(addedGraph)
+    val addedGraph = graph ++ graphNode1 ++ graphNode2
 
     val spO = n(addedGraph, fakeNode) shortestPathTo n(addedGraph, node)
     spO.get.weight

@@ -7,6 +7,14 @@ import scalax.collection.edge.Implicits._
 import scalax.collection.Graph
 import scalax.collection.edge.WUnDiEdge
 
+object Constants {
+  // $COVERAGE-OFF$
+  @inline final val D_EPSILON = 10
+  // $COVERAGE-ON$
+}
+
+import Constants._
+
 case class UTuple(x: Double, y: Double, p: Double)
 case class GridLocation(x: Int, y: Int) {}
 case class Node(id: Int, x: Double, y: Double, tree: RTree[UTuple])
@@ -78,7 +86,6 @@ object HelloWorld {
     addEdges(graph, nodes, edges)
   }
 
-
   def n(g: Graph[Node, WLkUnDiEdge], outer: Node): g.NodeT = g get outer
 
   def calculateDistance(graph: Graph[Node, WLkUnDiEdge], obj: StreamInsert, node: Node): Double = {
@@ -99,6 +106,31 @@ object HelloWorld {
     val spO = n(addedGraph, fakeNode) shortestPathTo n(addedGraph, node)
     spO.get.weight
   }
+
+  def insertToRtree(): RTree[UTuple] = {
+    val entries1 = Set(Entry(Point(5, 5), UTuple(5, 5, 0.5)), Entry(Point(4, 4), UTuple(5, 4, 0.5)))
+
+    var l1 = Leaf(entries1.toVector, Box(5, 4, 5, 5))
+
+    var b1 = Branch[UTuple](Vector(l1, l1), Box(4, 4, 5, 5))
+
+    var tree = RTree[UTuple]()
+
+
+//    var tree = rtree.insert(1, 1, UTuple(1, 1, 0.5))
+//    tree = tree.insert(1, 2, UTuple(1, 2, 0.2))
+//    tree = tree.insert(2, 1, UTuple(1, 1.5, 0.3))
+//
+//    var t1 = RTree[UTuple](Entry(Point(5, 5), UTuple(5, 5, 0.5)), Entry(Point(4, 4), UTuple(5, 4, 0.5)))
+//
+//    val entries1 = Set(Entry(Point(5, 5), UTuple(5, 5, 0.5)), Entry(Point(4, 4), UTuple(5, 4, 0.5)))
+//
+//    var l1 = Leaf(entries1.toVector, Box(5, 4, 5, 5))
+
+    println(b1.pretty)
+    RTree[UTuple]()
+  }
+
 
   def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
     var gTmp = GridGraph
@@ -126,6 +158,10 @@ object HelloWorld {
 
       graph = addGraphsFromNode(graph, grid, node)
       val len = calculateDistance(graph, uncertainData.asInstanceOf[StreamInsert], node)
+
+      if (len < D_EPSILON) {
+
+      }
     }
 
     grid
@@ -138,6 +174,8 @@ object HelloWorld {
     grid.addEdges(table_edges)
 
     grid.calculateEdgesLengthAndGrid()
+
+    insertToRtree()
 
     streams.foldLeft(streams) {(acc, stream) => {
       theAlgorithm(grid, stream)

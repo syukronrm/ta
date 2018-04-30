@@ -9,4 +9,6 @@ resolvers += "bintray/meetup" at "http://dl.bintray.com/meetup/maven"
 libraryDependencies += "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test"
 libraryDependencies += "org.scala-graph" %% "graph-core" % "1.12.3"
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
+
+// https://github.com/non/archery
 libraryDependencies += "org.spire-math" %% "archery" % "0.6.0"

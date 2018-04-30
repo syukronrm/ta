@@ -17,7 +17,7 @@ import Constants._
 
 case class UTuple(x: Double, y: Double, p: Double)
 case class GridLocation(x: Int, y: Int) {}
-case class Node(id: Int, x: Double, y: Double, tree: RTree[EntryTuple])
+case class Node(id: Int, x: Double, y: Double, tree: RTree[EntryTuple], objects: Option[StreamInsert])
 case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation])
 case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
 
@@ -59,7 +59,7 @@ object HelloWorld {
   def n(g: Graph[Node, WLkUnDiEdge], outer: Node): g.NodeT = g get outer
 
   def calculateDistance(graph: Graph[Node, WLkUnDiEdge], obj: StreamInsert, node: Node): Double = {
-    val fakeNode = Node(0, 0, 0, RTree())
+    val fakeNode = Node(0, 0, 0, RTree(), None)
     val edgeFakeNode = graph.edges.find(_.label == obj.edgeId).get
 
     val node1 = edgeFakeNode._1.toOuter
@@ -87,7 +87,7 @@ object HelloWorld {
 
     val tree = node.tree.insertAll(tupleForTree)
 
-    Node(node.id, node.x, node.y, tree)
+    Node(node.id, node.x, node.y, tree, node.objects)
   }
 
 
@@ -130,14 +130,14 @@ object HelloWorld {
 
   def main(args: Array[String]): Unit = {
     val table_nodes: Set[Node] = Set(
-      Node(1, 2, 1, RTree()),
-      Node(2, 19, 1, RTree()),
-      Node(3, 3, 3, RTree()),
-      Node(4, 9, 5, RTree()),
-      Node(5, 16, 5, RTree()),
-      Node(6, 3, 8, RTree()),
-      Node(7, 8, 12, RTree()),
-      Node(8, 16, 12, RTree()),
+      Node(1, 2, 1, RTree(), None),
+      Node(2, 19, 1, RTree(), None),
+      Node(3, 3, 3, RTree(), None),
+      Node(4, 9, 5, RTree(), None),
+      Node(5, 16, 5, RTree(), None),
+      Node(6, 3, 8, RTree(), None),
+      Node(7, 8, 12, RTree(), None),
+      Node(8, 16, 12, RTree(), None),
     )
 
     val table_edges: Set[Edge] = Set(

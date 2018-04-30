@@ -17,9 +17,11 @@ import Constants._
 
 case class UTuple(x: Double, y: Double, p: Double)
 case class GridLocation(x: Int, y: Int) {}
-case class Node(id: Int, x: Double, y: Double, tree: RTree[UTuple])
+case class Node(id: Int, x: Double, y: Double, tree: RTree[EntryTuple])
 case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation])
 case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
+
+case class EntryTuple(n: Int, prob: Double)
 
 abstract class UncertainStream {
   def getId: Int
@@ -34,38 +36,6 @@ case class StreamDelete(id: Int)
 }
 
 object HelloWorld {
-  val table_nodes: Set[Node] = Set(
-    Node(1, 2, 1, RTree()),
-    Node(2, 19, 1, RTree()),
-    Node(3, 3, 3, RTree()),
-    Node(4, 9, 5, RTree()),
-    Node(5, 16, 5, RTree()),
-    Node(6, 3, 8, RTree()),
-    Node(7, 8, 12, RTree()),
-    Node(8, 16, 12, RTree()),
-  )
-
-  val table_edges: Set[Edge] = Set(
-    Edge(1, 1, 2, None, None),
-    Edge(2, 1, 3, None, None),
-    Edge(3, 2, 5, None, None),
-    Edge(4, 3, 4, None, None),
-    Edge(4, 3, 6, None, None),
-    Edge(5, 4, 5, None, None),
-    Edge(6, 4, 7, None, None),
-    Edge(7, 5, 8, None, None),
-    Edge(8, 6, 7, None, None),
-    Edge(9, 7, 8, None, None),
-  )
-
-  val streams: Set[UncertainStream] = Set(
-    StreamInsert(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3))),
-    StreamInsert(1, 2, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3))),
-    StreamInsert(2, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4))),
-    StreamInsert(3, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5))),
-//    StreamDelete(1)
-  )
-
   def addEdge(graph: Graph[Node, WLkUnDiEdge], nodei: Node, nodej: Node, weight: Double, key: Int): Graph[Node, WLkUnDiEdge] = {
     graph ++ Graph(WLkUnDiEdge(nodei, nodej)(weight, key))
   }
@@ -79,7 +49,7 @@ object HelloWorld {
     })
   }
 
-  def addGraphsFromNode(graph: Graph[Node, WLkUnDiEdge], grid: GridIndex, node: Node): Graph[Node, WLkUnDiEdge] = {
+  def addGraphsFromNodeGrid(graph: Graph[Node, WLkUnDiEdge], grid: GridIndex, node: Node): Graph[Node, WLkUnDiEdge] = {
     val gridLoc = grid.getGridLocation(node)
     val EdgesNodes(edges, nodes) = grid.getGridEdges(grid, gridLoc)
 
@@ -107,28 +77,17 @@ object HelloWorld {
     spO.get.weight
   }
 
-  def insertToRtree(): RTree[UTuple] = {
-    val entries1 = Set(Entry(Point(5, 5), UTuple(5, 5, 0.5)), Entry(Point(4, 4), UTuple(5, 4, 0.5)))
+  def insertToNode(obj: StreamInsert, node: Node): Node = {
+    val tupleForTree = obj.tuples.map(t =>
+      Entry(
+        Point(t.x.toFloat, t.y.toFloat),
+        EntryTuple(obj.id, t.p)
+      )
+    )
 
-    var l1 = Leaf(entries1.toVector, Box(5, 4, 5, 5))
+    val tree = node.tree.insertAll(tupleForTree)
 
-    var b1 = Branch[UTuple](Vector(l1, l1), Box(4, 4, 5, 5))
-
-    var tree = RTree[UTuple]()
-
-
-//    var tree = rtree.insert(1, 1, UTuple(1, 1, 0.5))
-//    tree = tree.insert(1, 2, UTuple(1, 2, 0.2))
-//    tree = tree.insert(2, 1, UTuple(1, 1.5, 0.3))
-//
-//    var t1 = RTree[UTuple](Entry(Point(5, 5), UTuple(5, 5, 0.5)), Entry(Point(4, 4), UTuple(5, 4, 0.5)))
-//
-//    val entries1 = Set(Entry(Point(5, 5), UTuple(5, 5, 0.5)), Entry(Point(4, 4), UTuple(5, 4, 0.5)))
-//
-//    var l1 = Leaf(entries1.toVector, Box(5, 4, 5, 5))
-
-    println(b1.pretty)
-    RTree[UTuple]()
+    Node(node.id, node.x, node.y, tree)
   }
 
 
@@ -153,14 +112,16 @@ object HelloWorld {
     queue.enqueue(nodei)
     queue.enqueue(nodej)
 
+    var test = nodei
+
     while (queue.nonEmpty) {
       var node = queue.dequeue()
 
-      graph = addGraphsFromNode(graph, grid, node)
+      graph = addGraphsFromNodeGrid(graph, grid, node)
       val len = calculateDistance(graph, uncertainData.asInstanceOf[StreamInsert], node)
 
       if (len < D_EPSILON) {
-
+        node = insertToNode(uncertainData.asInstanceOf[StreamInsert], node)
       }
     }
 
@@ -168,14 +129,44 @@ object HelloWorld {
   }
 
   def main(args: Array[String]): Unit = {
+    val table_nodes: Set[Node] = Set(
+      Node(1, 2, 1, RTree()),
+      Node(2, 19, 1, RTree()),
+      Node(3, 3, 3, RTree()),
+      Node(4, 9, 5, RTree()),
+      Node(5, 16, 5, RTree()),
+      Node(6, 3, 8, RTree()),
+      Node(7, 8, 12, RTree()),
+      Node(8, 16, 12, RTree()),
+    )
+
+    val table_edges: Set[Edge] = Set(
+      Edge(1, 1, 2, None, None),
+      Edge(2, 1, 3, None, None),
+      Edge(3, 2, 5, None, None),
+      Edge(4, 3, 4, None, None),
+      Edge(4, 3, 6, None, None),
+      Edge(5, 4, 5, None, None),
+      Edge(6, 4, 7, None, None),
+      Edge(7, 5, 8, None, None),
+      Edge(8, 6, 7, None, None),
+      Edge(9, 7, 8, None, None),
+    )
+
+    val streams: Set[UncertainStream] = Set(
+      StreamInsert(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3))),
+      StreamInsert(2, 2, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3))),
+      StreamInsert(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4))),
+      StreamInsert(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5))),
+      //    StreamDelete(1)
+    )
+
     var grid = new GridIndex()
 
     grid.addNodes(table_nodes)
     grid.addEdges(table_edges)
 
     grid.calculateEdgesLengthAndGrid()
-
-    insertToRtree()
 
     streams.foldLeft(streams) {(acc, stream) => {
       theAlgorithm(grid, stream)

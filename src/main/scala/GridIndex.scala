@@ -9,13 +9,13 @@ class GridIndex() {
 
   var edges: Set[Edge] = Set()
   var nodes: Set[Node] = Set()
-  var uncertainDatas: Set[StreamInsert] = Set()
+  var uncertainDatas: Set[UncertainObject] = Set()
 
-  def isObjectExist(obj: StreamInsert): Boolean = this.uncertainDatas.contains(obj)
-  def getObject(objectId: Int): Option[StreamInsert] = this.uncertainDatas.find(u => u.id == objectId)
-  def addObject(obj: StreamInsert): Unit = this.uncertainDatas = this.uncertainDatas + obj
+  def isObjectExist(obj: UncertainObject): Boolean = this.uncertainDatas.contains(obj)
+  def getObject(objectId: Int): Option[UncertainObject] = this.uncertainDatas.find(u => u.id == objectId)
+  def addObject(obj: UncertainObject): Unit = this.uncertainDatas = this.uncertainDatas + obj
   def removeObject(objectId: Int): Unit =
-    this.uncertainDatas = this.uncertainDatas.filterNot((n: StreamInsert) => n.id == objectId)
+    this.uncertainDatas = this.uncertainDatas.filterNot((n: UncertainObject) => n.id == objectId)
 
   def addNode(node: Node): Unit = this.nodes = this.nodes + node
   def addNodes(nodes: Set[Node]): Unit = this.nodes = this.nodes ++ nodes
@@ -57,8 +57,8 @@ class GridIndex() {
     val nodei = this.findNodeById(edge.nodei)
     val nodej = this.findNodeById(edge.nodej)
 
-    val Node(_, x1, y1, _) = nodei.get
-    val Node(_, x2, y2, _) = nodej.get
+    val Node(_, x1, y1, _, _) = nodei.get
+    val Node(_, x2, y2, _, _) = nodej.get
 
     val length = getLength(x1, y1, x2, y2)
     val g = getGridLocation(nodei.get)

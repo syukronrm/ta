@@ -10,6 +10,7 @@ import scalax.collection.edge.WUnDiEdge
 object Constants {
   // $COVERAGE-OFF$
   @inline final val D_EPSILON = 10
+  @inline final val P_THRESHOLD = 0.5
   // $COVERAGE-ON$
 }
 
@@ -17,16 +18,38 @@ import Constants._
 
 case class UTuple(x: Double, y: Double, p: Double)
 case class GridLocation(x: Int, y: Int) {}
-case class Node(id: Int, x: Double, y: Double, tree: RTree[EntryTuple], objects: Option[StreamInsert])
+case class Node(id: Int, x: Double, y: Double, tree: RTree[EntryTuple], objects: Set[UncertainObject])
 case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation])
 case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
 
 case class EntryTuple(n: Int, prob: Double)
 
+object Box {
+  def expandPdr(bbox: Box): Box = {
+    val xMin = bbox.lowerLeft.x
+    val yMin = bbox.lowerLeft.y
+    val xMax = Float.PositiveInfinity
+    val yMax = Float.PositiveInfinity
+
+    Box(xMin, yMin, xMax, yMax)
+  }
+
+  def expandDdr(bbox: Box): Box = {
+    val xMin = bbox.upperRight.x
+    val yMin = bbox.upperRight.y
+    val xMax = Float.PositiveInfinity
+    val yMax = Float.PositiveInfinity
+
+    Box(xMin, yMin, xMax, yMax)
+  }
+}
+
+import Box._
+
 abstract class UncertainStream {
   def getId: Int
 }
-case class StreamInsert(id: Int, edgeId: Int, pos: Double, tuples: Set[UTuple])
+case class UncertainObject(id: Int, edgeId: Int, pos: Double, tuples: Set[UTuple], bbox: Box, isPossible: Boolean)
   extends UncertainStream {
   override def getId: Int = id
 }
@@ -58,8 +81,8 @@ object HelloWorld {
 
   def n(g: Graph[Node, WLkUnDiEdge], outer: Node): g.NodeT = g get outer
 
-  def calculateDistance(graph: Graph[Node, WLkUnDiEdge], obj: StreamInsert, node: Node): Double = {
-    val fakeNode = Node(0, 0, 0, RTree(), None)
+  def calculateDistance(graph: Graph[Node, WLkUnDiEdge], obj: UncertainObject, node: Node): Double = {
+    val fakeNode = Node(0, 0, 0, RTree(), Set())
     val edgeFakeNode = graph.edges.find(_.label == obj.edgeId).get
 
     val node1 = edgeFakeNode._1.toOuter
@@ -77,7 +100,20 @@ object HelloWorld {
     spO.get.weight
   }
 
-  def insertToNode(obj: StreamInsert, node: Node): Node = {
+  def findPdrOverlappedObjects(node: Node, obj: UncertainObject): Set[UncertainObject] = {
+    val boxStream = obj.bbox
+    val tree = node.tree
+
+    val pdrBox = expandPdr(boxStream)
+    val overlappedTuples = tree.search(pdrBox)
+
+    val nodeIds = overlappedTuples.map(o => o.value.n).toSet[Int]
+    val objects = nodeIds.map(id => node.objects.find(_.id == id).get)
+
+    objects
+  }
+
+  def insertToNode(obj: UncertainObject, node: Node): Node = {
     val tupleForTree = obj.tuples.map(t =>
       Entry(
         Point(t.x.toFloat, t.y.toFloat),
@@ -85,14 +121,37 @@ object HelloWorld {
       )
     )
 
-    val tree = node.tree.insertAll(tupleForTree)
+    // FIND OBJECT OVERLAPPED PDR
+    val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
 
-    Node(node.id, node.x, node.y, tree, node.objects)
+    var impossibleObjects: Set[UncertainObject] = Set()
+
+    pdrOverlappedObjects.foreach(q => {
+      if (expandDdr(obj.bbox).contains(q.bbox)) {
+        impossibleObjects = impossibleObjects + q
+      } else {
+        val objProb = node.tree
+          .search(expandDdr(obj.bbox))
+          .filter(_.value.n == q.id)
+          .foldLeft(0.0)((acc, e) => acc + e.value.prob)
+
+        if (objProb > (1 - P_THRESHOLD)) {
+          impossibleObjects = impossibleObjects + q
+        } else {
+          // TODO UPDATE SKYPROB q
+          
+        }
+      }
+    })
+
+    // INSERT OBJECT TO TREE
+    val tree = node.tree.insertAll(tupleForTree)
+    val objects = node.objects + obj
+    Node(node.id, node.x, node.y, tree, objects)
   }
 
 
   def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
-    var gTmp = GridGraph
     var queue: scala.collection.mutable.Queue[Node] = scala.collection.mutable.Queue[Node]()
     var graph: Graph[Node, WLkUnDiEdge] = Graph()
 
@@ -100,7 +159,7 @@ object HelloWorld {
     var visitedNodes: Set[Node] = Set()
 
     val edgeId: Int = uncertainData match {
-      case StreamInsert(_, edgeId_, _, _) => edgeId_
+      case UncertainObject(_, edgeId_, _, _, _, _) => edgeId_
     }
 
     var edge: Edge = grid.findEdgeById(edgeId).get
@@ -112,32 +171,32 @@ object HelloWorld {
     queue.enqueue(nodei)
     queue.enqueue(nodej)
 
-    var test = nodei
-
     while (queue.nonEmpty) {
       var node = queue.dequeue()
 
       graph = addGraphsFromNodeGrid(graph, grid, node)
-      val len = calculateDistance(graph, uncertainData.asInstanceOf[StreamInsert], node)
+      val len = calculateDistance(graph, uncertainData.asInstanceOf[UncertainObject], node)
 
       if (len < D_EPSILON) {
-        node = insertToNode(uncertainData.asInstanceOf[StreamInsert], node)
+        node = insertToNode(uncertainData.asInstanceOf[UncertainObject], node)
       }
     }
 
     grid
   }
 
+//  def fillBox(stream: )
+
   def main(args: Array[String]): Unit = {
     val table_nodes: Set[Node] = Set(
-      Node(1, 2, 1, RTree(), None),
-      Node(2, 19, 1, RTree(), None),
-      Node(3, 3, 3, RTree(), None),
-      Node(4, 9, 5, RTree(), None),
-      Node(5, 16, 5, RTree(), None),
-      Node(6, 3, 8, RTree(), None),
-      Node(7, 8, 12, RTree(), None),
-      Node(8, 16, 12, RTree(), None),
+      Node(1, 2, 1, RTree(), Set()),
+      Node(2, 19, 1, RTree(), Set()),
+      Node(3, 3, 3, RTree(), Set()),
+      Node(4, 9, 5, RTree(), Set()),
+      Node(5, 16, 5, RTree(), Set()),
+      Node(6, 3, 8, RTree(), Set()),
+      Node(7, 8, 12, RTree(), Set()),
+      Node(8, 16, 12, RTree(), Set())
     )
 
     val table_edges: Set[Edge] = Set(
@@ -150,14 +209,14 @@ object HelloWorld {
       Edge(6, 4, 7, None, None),
       Edge(7, 5, 8, None, None),
       Edge(8, 6, 7, None, None),
-      Edge(9, 7, 8, None, None),
+      Edge(9, 7, 8, None, None)
     )
 
     val streams: Set[UncertainStream] = Set(
-      StreamInsert(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3))),
-      StreamInsert(2, 2, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3))),
-      StreamInsert(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4))),
-      StreamInsert(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5))),
+      UncertainObject(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3)), Box(4, 5, 7, 7), isPossible = true),
+      UncertainObject(2, 2, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3)), Box(4, 5, 7, 7), isPossible = true),
+      UncertainObject(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4)), Box(5, 6, 6, 6), isPossible = true),
+      UncertainObject(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5)), Box(1, 2, 3, 4), isPossible = true)
       //    StreamDelete(1)
     )
 

@@ -20,7 +20,7 @@ object GridGraph {
   def addEdges(graphSrc: Graph[String, WUnDiEdge], graphDst: Graph[String, WUnDiEdge]): Graph[String, WUnDiEdge] =
     graphSrc ++ graphDst
 
-  def addObject(graph: Graph[String, WUnDiEdge], grid: GridIndex, obj: StreamInsert): Graph[String, WUnDiEdge] = {
+  def addObject(graph: Graph[String, WUnDiEdge], grid: GridIndex, obj: UncertainObject): Graph[String, WUnDiEdge] = {
     val edge = grid.findEdgeById(obj.edgeId)
     val nodei = grid.findNodeById(edge.get.nodei)
     val nodej = grid.findNodeById(edge.get.nodej)
@@ -39,7 +39,7 @@ object GridGraph {
       lengthNodej)
   }
 
-  def getDistance(graph: Graph[String, WUnDiEdge], obj: StreamInsert, node: Node): Option[Double] = {
+  def getDistance(graph: Graph[String, WUnDiEdge], obj: UncertainObject, node: Node): Option[Double] = {
     val nodeStr = "n" + node.id.toString
     val objStr = "u" + obj.id.toString
 

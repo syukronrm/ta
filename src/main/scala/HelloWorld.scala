@@ -24,7 +24,7 @@ case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
 
 case class EntryTuple(n: Int, prob: Double)
 
-object Box {
+object HelloBox {
   def expandPdr(bbox: Box): Box = {
     val xMin = bbox.lowerLeft.x
     val yMin = bbox.lowerLeft.y
@@ -44,7 +44,7 @@ object Box {
   }
 }
 
-import Box._
+import HelloBox._
 
 abstract class UncertainStream {
   def getId: Int
@@ -185,7 +185,24 @@ object HelloWorld {
     grid
   }
 
-//  def fillBox(stream: )
+  def SkyPrx(tree: RTree[EntryTuple], X: Iterator[Entry[EntryTuple]], entry: Entry[EntryTuple]): Double = {
+    val a = tree.entries
+      .toList
+      .filterNot(e => X.contains(e))
+      .groupBy(_.value.n)     // return Y's in map
+
+    0.0
+  }
+
+  def SkyPrX(tree: RTree[EntryTuple], objectId: Int): Double = {
+    val X = tree.entries.filter(_.value.n == objectId)
+
+    tree.entries.map(e => {
+      e.value.prob * SkyPrx(tree, X, e)
+    })
+
+    0.0
+  }
 
   def main(args: Array[String]): Unit = {
     val table_nodes: Set[Node] = Set(

@@ -44,8 +44,8 @@ object HelloBox {
   def expandPdr(bbox: Box): Box = {
     val xMin = bbox.lowerLeft.x
     val yMin = bbox.lowerLeft.y
-    val xMax = Float.PositiveInfinity
-    val yMax = Float.PositiveInfinity
+    val xMax = Float.MaxValue
+    val yMax = Float.MaxValue
 
     Box(xMin, yMin, xMax, yMax)
   }
@@ -53,14 +53,75 @@ object HelloBox {
   def expandDdr(bbox: Box): Box = {
     val xMin = bbox.upperRight.x
     val yMin = bbox.upperRight.y
-    val xMax = Float.PositiveInfinity
-    val yMax = Float.PositiveInfinity
+    val xMax = Float.MaxValue
+    val yMax = Float.MaxValue
 
     Box(xMin, yMin, xMax, yMax)
   }
 }
 
 object HelloWorld {
+  /**
+    * Pretty prints a Scala value similar to its source represention.
+    * Particularly useful for case classes.
+    * @param a - The value to pretty print.
+    * @param indentSize - Number of spaces for each indent.
+    * @param maxElementWidth - Largest element size before wrapping.
+    * @param depth - Initial depth to pretty print indents.
+    * @return
+    */
+  private def prettyPrint(a: Any, indentSize: Int = 2, maxElementWidth: Int = 30, depth: Int = 0): String = {
+    val indent = " " * depth * indentSize
+    val fieldIndent = indent + (" " * indentSize)
+    val thisDepth = prettyPrint(_: Any, indentSize, maxElementWidth, depth)
+    val nextDepth = prettyPrint(_: Any, indentSize, maxElementWidth, depth + 1)
+    a match {
+      // Make Strings look similar to their literal form.
+      case s: String =>
+        val replaceMap = Seq(
+          "\n" -> "\\n",
+          "\r" -> "\\r",
+          "\t" -> "\\t",
+          "\"" -> "\\\""
+        )
+        '"' + replaceMap.foldLeft(s) { case (acc, (c, r)) => acc.replace(c, r) } + '"'
+      // For an empty Seq just use its normal String representation.
+      case xs: Seq[_] if xs.isEmpty => xs.toString()
+      case xs: Seq[_] =>
+        // If the Seq is not too long, pretty print on one line.
+        val resultOneLine = xs.map(nextDepth).toString()
+        if (resultOneLine.length <= maxElementWidth) return resultOneLine
+        // Otherwise, build it with newlines and proper field indents.
+        val result = xs.map(x => s"\n$fieldIndent${nextDepth(x)}").toString()
+        result.substring(0, result.length - 1) + "\n" + indent + ")"
+      // Product should cover case classes.
+      case p: Product =>
+        val prefix = p.productPrefix
+        // We'll use reflection to get the constructor arg names and values.
+        val cls = p.getClass
+        val fields = cls.getDeclaredFields.filterNot(_.isSynthetic).map(_.getName)
+        val values = p.productIterator.toSeq
+        // If we weren't able to match up fields/values, fall back to toString.
+        if (fields.length != values.length) return p.toString
+        fields.zip(values).toList match {
+          // If there are no fields, just use the normal String representation.
+          case Nil => p.toString
+          // If there is just one field, let's just print it as a wrapper.
+          case (_, value) :: Nil => s"$prefix(${thisDepth(value)})"
+          // If there is more than one field, build up the field names and values.
+          case kvps =>
+            val prettyFields = kvps.map { case (k, v) => s"$fieldIndent$k = ${nextDepth(v)}" }
+            // If the result is not too long, pretty print on one line.
+            val resultOneLine = s"$prefix(${prettyFields.mkString(", ")})"
+            if (resultOneLine.length <= maxElementWidth) return resultOneLine
+            // Otherwise, build it with newlines and proper field indents.
+            s"$prefix(\n${prettyFields.mkString(",\n")}\n$indent)"
+        }
+      // If we haven't specialized this type, just use its toString.
+      case _ => a.toString
+    }
+  }
+
   def addEdge(graph: Graph[NodeGrid, WLkUnDiEdge], nodei: NodeGrid, nodej: NodeGrid, weight: Double, key: Int): Graph[NodeGrid, WLkUnDiEdge] = {
     graph ++ Graph(WLkUnDiEdge(nodei, nodej)(weight, key))
   }
@@ -127,12 +188,22 @@ object HelloWorld {
     val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
 
     val updatedOverlappedObjects = pdrOverlappedObjects.map(q => {
-      if (expandDdr(obj.bbox).contains(q.obj.bbox)) {
+      val ddrObj = expandDdr(obj.bbox)
+      var bboxQ = q.obj.bbox
+      if (ddrObj.contains(bboxQ)) {
         NodeObject(q.obj, q.skyProb, isImpossible = true)
       } else {
+        val bbox = expandDdr(obj.bbox)
+
         val objProb = node.tree
-          .search(expandDdr(obj.bbox))
+          .search(bbox)
+          .map(a => {
+            a
+          })
           .filter(_.value.n == q.obj.id)
+          .map(a => {
+            a
+          })
           .foldLeft(0.0)((acc, e) => acc + e.value.prob)
 
         if (objProb > (1 - P_THRESHOLD)) {
@@ -140,7 +211,7 @@ object HelloWorld {
         } else {
           // TODO UPDATE SKYPROB q
           val skyProb = SkyPrX(node.tree.insertAll(incomingEntries), q.obj.id)
-          NodeObject(q.obj, skyProb, isImpossible = true)
+          NodeObject(q.obj, skyProb, q.isImpossible)
         }
       }
     })
@@ -152,9 +223,9 @@ object HelloWorld {
       val updated = updatedOverlappedObjects.find(_.obj.id == o.obj.id)
 
       if (updated.nonEmpty)
-        updated
-
-      o
+        updated.get
+      else
+        o
     })
 
     val skyProbU = SkyPrX(tree, obj.id)
@@ -191,32 +262,41 @@ object HelloWorld {
 
       if (len < D_EPSILON) {
         node = insertToNode(uncertainData.asInstanceOf[UncertainObject], node)
+        grid.updateNode(node)
+
+        node
       }
     }
 
     grid
   }
 
-  def isPryNotDominatex(y: Entry[EntryTuple], x: Entry[EntryTuple]): Boolean = {
+  def isyNotDominatex(y: Entry[EntryTuple], x: Entry[EntryTuple]): Boolean = {
     val expandedY = Box(y.geom.x, y.geom.y, y.geom.x2, y.geom.y2)
 
     if (expandDdr(expandedY).contains(x.geom))
+      false
+    else
       true
-
-    false
   }
 
   def PrYnotdominatex(Y: List[Entry[EntryTuple]], x: Entry[EntryTuple]): Double = {
-    Y.filter(y => isPryNotDominatex(y, x))
+    Y.filter(y => isyNotDominatex(y, x))
+      .map(a => {
+        a
+      })
       .foldLeft(0.0)((acc, e) => acc + e.value.prob)
   }
 
-  def SkyPrx(tree: RTree[EntryTuple], X: Iterator[Entry[EntryTuple]], x: Entry[EntryTuple]): Double = {
+  def SkyPrx(tree: RTree[EntryTuple], X: Set[Entry[EntryTuple]], x: Entry[EntryTuple]): Double = {
     val a = tree.entries
       .toList
       .filterNot(e => X.contains(e))
       .groupBy(_.value.n) // filtered Y Map
       .values
+      .map(a => {
+        a
+      })
       .map(Y => PrYnotdominatex(Y, x))
       .product
 
@@ -224,10 +304,21 @@ object HelloWorld {
   }
 
   def SkyPrX(tree: RTree[EntryTuple], objectId: Int): Double = {
-    val X = tree.entries.filter(_.value.n == objectId)
 
-    tree.entries
-      .map(e => e.value.prob * SkyPrx(tree, X, e))
+    val X = tree.entries.filter(_.value.n == objectId).toSet
+//    tree.entries
+//      .map(e => {
+//        val skyPrx = SkyPrx(tree, X, e)
+//        e.value.prob * skyPrx
+//      })
+//      .sum
+    X.map(x => {
+        val skyPrx = SkyPrx(tree, X, x)
+        x.value.prob * skyPrx
+      })
+      .map(a => {
+        a
+      })
       .sum
   }
 
@@ -258,7 +349,7 @@ object HelloWorld {
 
     val streams: Set[UncertainStream] = Set(
       UncertainObject(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3)), Box(4, 5, 7, 7), isPossible = true),
-      UncertainObject(2, 2, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3)), Box(4, 5, 7, 7), isPossible = true),
+      UncertainObject(2, 2, 0.5, Set(UTuple(6, 8, .6), UTuple(4, 4, .1), UTuple(7, 6, .3)), Box(4, 4, 7, 8), isPossible = true),
       UncertainObject(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4)), Box(5, 6, 6, 6), isPossible = true),
       UncertainObject(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5)), Box(1, 2, 3, 4), isPossible = true)
       //    StreamDelete(1)

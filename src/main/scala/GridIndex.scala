@@ -11,6 +11,12 @@ class GridIndex() {
   var nodes: Set[NodeGrid] = Set()
   var uncertainDatas: Set[UncertainObject] = Set()
 
+  def updateNode(nodeGrid: NodeGrid): Unit = {
+    val removedNode = this.nodes.find(_.id == nodeGrid.id).get
+
+    this.nodes = this.nodes - removedNode + nodeGrid
+  }
+
   def isObjectExist(obj: UncertainObject): Boolean = this.uncertainDatas.contains(obj)
   def getObject(objectId: Int): Option[UncertainObject] = this.uncertainDatas.find(u => u.id == objectId)
   def addObject(obj: UncertainObject): Unit = this.uncertainDatas = this.uncertainDatas + obj

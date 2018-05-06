@@ -39,7 +39,7 @@ object GridGraph {
       lengthNodej)
   }
 
-  def getDistance(graph: Graph[String, WUnDiEdge], obj: UncertainObject, node: Node): Option[Double] = {
+  def getDistance(graph: Graph[String, WUnDiEdge], obj: UncertainObject, node: NodeGrid): Option[Double] = {
     val nodeStr = "n" + node.id.toString
     val objStr = "u" + obj.id.toString
 

@@ -16,13 +16,29 @@ object Constants {
 
 import Constants._
 
-case class UTuple(x: Double, y: Double, p: Double)
-case class GridLocation(x: Int, y: Int) {}
-case class Node(id: Int, x: Double, y: Double, tree: RTree[EntryTuple], objects: Set[UncertainObject])
-case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation])
-case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
+import HelloBox._
 
+abstract class UncertainStream {
+  def getId: Int
+}
+case class UncertainObject(id: Int, edgeId: Int, pos: Double, tuples: Set[UTuple], bbox: Box, isPossible: Boolean)
+  extends UncertainStream {
+  override def getId: Int = id
+}
+case class StreamDelete(id: Int)
+  extends UncertainStream {
+  override def getId: Int = id
+}
+
+case class UTuple(x: Double, y: Double, p: Double)
 case class EntryTuple(n: Int, prob: Double)
+case class NodeObject(obj: UncertainObject, skyProb: Double, isImpossible: Boolean)
+case class NodeGrid(id: Int, x: Double, y: Double, tree: RTree[EntryTuple], objects: Set[NodeObject])
+
+case class GridLocation(x: Int, y: Int) {}
+case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation])
+case class EdgesNodes(edges: Set[Edge], nodes: Set[NodeGrid])
+
 
 object HelloBox {
   def expandPdr(bbox: Box): Box = {
@@ -44,45 +60,31 @@ object HelloBox {
   }
 }
 
-import HelloBox._
-
-abstract class UncertainStream {
-  def getId: Int
-}
-case class UncertainObject(id: Int, edgeId: Int, pos: Double, tuples: Set[UTuple], bbox: Box, isPossible: Boolean)
-  extends UncertainStream {
-  override def getId: Int = id
-}
-case class StreamDelete(id: Int)
-  extends UncertainStream {
-  override def getId: Int = id
-}
-
 object HelloWorld {
-  def addEdge(graph: Graph[Node, WLkUnDiEdge], nodei: Node, nodej: Node, weight: Double, key: Int): Graph[Node, WLkUnDiEdge] = {
+  def addEdge(graph: Graph[NodeGrid, WLkUnDiEdge], nodei: NodeGrid, nodej: NodeGrid, weight: Double, key: Int): Graph[NodeGrid, WLkUnDiEdge] = {
     graph ++ Graph(WLkUnDiEdge(nodei, nodej)(weight, key))
   }
 
-  def addEdges(graph: Graph[Node, WLkUnDiEdge], nodes: Set[Node], edges: Set[Edge]): Graph[Node, WLkUnDiEdge] = {
+  def addEdges(graph: Graph[NodeGrid, WLkUnDiEdge], nodes: Set[NodeGrid], edges: Set[Edge]): Graph[NodeGrid, WLkUnDiEdge] = {
     edges.foldLeft(graph)((acc, e) => {
-      val nodei = nodes.find((n: Node) => n.id == e.nodei).get
-      val nodej = nodes.find((n: Node) => n.id == e.nodej).get
+      val nodei = nodes.find((n: NodeGrid) => n.id == e.nodei).get
+      val nodej = nodes.find((n: NodeGrid) => n.id == e.nodej).get
 
       addEdge(acc, nodei, nodej, e.length.get, e.id)
     })
   }
 
-  def addGraphsFromNodeGrid(graph: Graph[Node, WLkUnDiEdge], grid: GridIndex, node: Node): Graph[Node, WLkUnDiEdge] = {
+  def addGraphsFromNodeGrid(graph: Graph[NodeGrid, WLkUnDiEdge], grid: GridIndex, node: NodeGrid): Graph[NodeGrid, WLkUnDiEdge] = {
     val gridLoc = grid.getGridLocation(node)
     val EdgesNodes(edges, nodes) = grid.getGridEdges(grid, gridLoc)
 
     addEdges(graph, nodes, edges)
   }
 
-  def n(g: Graph[Node, WLkUnDiEdge], outer: Node): g.NodeT = g get outer
+  def n(g: Graph[NodeGrid, WLkUnDiEdge], outer: NodeGrid): g.NodeT = g get outer
 
-  def calculateDistance(graph: Graph[Node, WLkUnDiEdge], obj: UncertainObject, node: Node): Double = {
-    val fakeNode = Node(0, 0, 0, RTree(), Set())
+  def calculateDistance(graph: Graph[NodeGrid, WLkUnDiEdge], obj: UncertainObject, node: NodeGrid): Double = {
+    val fakeNode = NodeGrid(0, 0, 0, RTree(), Set())
     val edgeFakeNode = graph.edges.find(_.label == obj.edgeId).get
 
     val node1 = edgeFakeNode._1.toOuter
@@ -91,8 +93,8 @@ object HelloWorld {
     val node2 = edgeFakeNode._2.toOuter
     val lenToNode2 = edgeFakeNode.weight * (1 - obj.pos)
 
-    val graphNode1: Graph[Node, WLkUnDiEdge] = Graph(WLkUnDiEdge(node1, fakeNode)(lenToNode1, 0))
-    val graphNode2: Graph[Node, WLkUnDiEdge] = Graph(WLkUnDiEdge(node2, fakeNode)(lenToNode2, 0))
+    val graphNode1: Graph[NodeGrid, WLkUnDiEdge] = Graph(WLkUnDiEdge(node1, fakeNode)(lenToNode1, 0))
+    val graphNode2: Graph[NodeGrid, WLkUnDiEdge] = Graph(WLkUnDiEdge(node2, fakeNode)(lenToNode2, 0))
 
     val addedGraph = graph ++ graphNode1 ++ graphNode2
 
@@ -100,7 +102,7 @@ object HelloWorld {
     spO.get.weight
   }
 
-  def findPdrOverlappedObjects(node: Node, obj: UncertainObject): Set[UncertainObject] = {
+  def findPdrOverlappedObjects(node: NodeGrid, obj: UncertainObject): Set[NodeObject] = {
     val boxStream = obj.bbox
     val tree = node.tree
 
@@ -108,13 +110,13 @@ object HelloWorld {
     val overlappedTuples = tree.search(pdrBox)
 
     val nodeIds = overlappedTuples.map(o => o.value.n).toSet[Int]
-    val objects = nodeIds.map(id => node.objects.find(_.id == id).get)
+    val objects = nodeIds.map(id => node.objects.find(_.obj.id == id).get)
 
     objects
   }
 
-  def insertToNode(obj: UncertainObject, node: Node): Node = {
-    val tupleForTree = obj.tuples.map(t =>
+  def insertToNode(obj: UncertainObject, node: NodeGrid): NodeGrid = {
+    val incomingEntries = obj.tuples.map(t =>
       Entry(
         Point(t.x.toFloat, t.y.toFloat),
         EntryTuple(obj.id, t.p)
@@ -124,39 +126,49 @@ object HelloWorld {
     // FIND OBJECT OVERLAPPED PDR
     val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
 
-    var impossibleObjects: Set[UncertainObject] = Set()
-
-    pdrOverlappedObjects.foreach(q => {
-      if (expandDdr(obj.bbox).contains(q.bbox)) {
-        impossibleObjects = impossibleObjects + q
+    val updatedOverlappedObjects = pdrOverlappedObjects.map(q => {
+      if (expandDdr(obj.bbox).contains(q.obj.bbox)) {
+        NodeObject(q.obj, q.skyProb, isImpossible = true)
       } else {
         val objProb = node.tree
           .search(expandDdr(obj.bbox))
-          .filter(_.value.n == q.id)
+          .filter(_.value.n == q.obj.id)
           .foldLeft(0.0)((acc, e) => acc + e.value.prob)
 
         if (objProb > (1 - P_THRESHOLD)) {
-          impossibleObjects = impossibleObjects + q
+          NodeObject(q.obj, q.skyProb, isImpossible = true)
         } else {
           // TODO UPDATE SKYPROB q
-          
+          val skyProb = SkyPrX(node.tree.insertAll(incomingEntries), q.obj.id)
+          NodeObject(q.obj, skyProb, isImpossible = true)
         }
       }
     })
 
     // INSERT OBJECT TO TREE
-    val tree = node.tree.insertAll(tupleForTree)
-    val objects = node.objects + obj
-    Node(node.id, node.x, node.y, tree, objects)
+    val tree = node.tree.insertAll(incomingEntries)
+
+    val updatedObjects = node.objects.map(o => {
+      val updated = updatedOverlappedObjects.find(_.obj.id == o.obj.id)
+
+      if (updated.nonEmpty)
+        updated
+
+      o
+    })
+
+    val skyProbU = SkyPrX(tree, obj.id)
+    val finalObjects = updatedObjects + NodeObject(obj, skyProbU, isImpossible = false)
+    NodeGrid(node.id, node.x, node.y, tree, finalObjects)
   }
 
 
   def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
-    var queue: scala.collection.mutable.Queue[Node] = scala.collection.mutable.Queue[Node]()
-    var graph: Graph[Node, WLkUnDiEdge] = Graph()
+    var queue: scala.collection.mutable.Queue[NodeGrid] = scala.collection.mutable.Queue[NodeGrid]()
+    var graph: Graph[NodeGrid, WLkUnDiEdge] = Graph()
 
-    var updatedNodes: Set[Node] = Set()
-    var visitedNodes: Set[Node] = Set()
+    var updatedNodes: Set[NodeGrid] = Set()
+    var visitedNodes: Set[NodeGrid] = Set()
 
     val edgeId: Int = uncertainData match {
       case UncertainObject(_, edgeId_, _, _, _, _) => edgeId_
@@ -185,35 +197,50 @@ object HelloWorld {
     grid
   }
 
-  def SkyPrx(tree: RTree[EntryTuple], X: Iterator[Entry[EntryTuple]], entry: Entry[EntryTuple]): Double = {
+  def isPryNotDominatex(y: Entry[EntryTuple], x: Entry[EntryTuple]): Boolean = {
+    val expandedY = Box(y.geom.x, y.geom.y, y.geom.x2, y.geom.y2)
+
+    if (expandDdr(expandedY).contains(x.geom))
+      true
+
+    false
+  }
+
+  def PrYnotdominatex(Y: List[Entry[EntryTuple]], x: Entry[EntryTuple]): Double = {
+    Y.filter(y => isPryNotDominatex(y, x))
+      .foldLeft(0.0)((acc, e) => acc + e.value.prob)
+  }
+
+  def SkyPrx(tree: RTree[EntryTuple], X: Iterator[Entry[EntryTuple]], x: Entry[EntryTuple]): Double = {
     val a = tree.entries
       .toList
       .filterNot(e => X.contains(e))
-      .groupBy(_.value.n)     // return Y's in map
+      .groupBy(_.value.n) // filtered Y Map
+      .values
+      .map(Y => PrYnotdominatex(Y, x))
+      .product
 
-    0.0
+    a
   }
 
   def SkyPrX(tree: RTree[EntryTuple], objectId: Int): Double = {
     val X = tree.entries.filter(_.value.n == objectId)
 
-    tree.entries.map(e => {
-      e.value.prob * SkyPrx(tree, X, e)
-    })
-
-    0.0
+    tree.entries
+      .map(e => e.value.prob * SkyPrx(tree, X, e))
+      .sum
   }
 
   def main(args: Array[String]): Unit = {
-    val table_nodes: Set[Node] = Set(
-      Node(1, 2, 1, RTree(), Set()),
-      Node(2, 19, 1, RTree(), Set()),
-      Node(3, 3, 3, RTree(), Set()),
-      Node(4, 9, 5, RTree(), Set()),
-      Node(5, 16, 5, RTree(), Set()),
-      Node(6, 3, 8, RTree(), Set()),
-      Node(7, 8, 12, RTree(), Set()),
-      Node(8, 16, 12, RTree(), Set())
+    val table_nodes: Set[NodeGrid] = Set(
+      NodeGrid(1, 2, 1, RTree(), Set()),
+      NodeGrid(2, 19, 1, RTree(), Set()),
+      NodeGrid(3, 3, 3, RTree(), Set()),
+      NodeGrid(4, 9, 5, RTree(), Set()),
+      NodeGrid(5, 16, 5, RTree(), Set()),
+      NodeGrid(6, 3, 8, RTree(), Set()),
+      NodeGrid(7, 8, 12, RTree(), Set()),
+      NodeGrid(8, 16, 12, RTree(), Set())
     )
 
     val table_edges: Set[Edge] = Set(

@@ -1,3 +1,5 @@
+import HelloWorld.updateNode
+
 import scala.collection.immutable.Set
 import archery._
 import scalax.collection.edge.{WLkUnDiEdge, WUnDiEdge}
@@ -6,6 +8,8 @@ import scalax.collection.GraphPredef._
 import scalax.collection.edge.Implicits._
 import scalax.collection.Graph
 import scalax.collection.edge.WUnDiEdge
+
+import scala.collection.mutable
 
 object Constants {
   // $COVERAGE-OFF$
@@ -36,7 +40,7 @@ case class NodeObject(obj: UncertainObject, skyProb: Double, isImpossible: Boole
 case class NodeGrid(id: Int, x: Double, y: Double, tree: RTree[EntryTuple], objects: Set[NodeObject])
 
 case class GridLocation(x: Int, y: Int) {}
-case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation])
+case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation], objects: Set[UncertainObject])
 case class EdgesNodes(edges: Set[Edge], nodes: Set[NodeGrid])
 
 
@@ -123,6 +127,9 @@ object HelloWorld {
   }
 
   def addEdge(graph: Graph[NodeGrid, WLkUnDiEdge], nodei: NodeGrid, nodej: NodeGrid, weight: Double, key: Int): Graph[NodeGrid, WLkUnDiEdge] = {
+
+    // SAVE ALL EDGES TO
+
     graph ++ Graph(WLkUnDiEdge(nodei, nodej)(weight, key))
   }
 
@@ -131,12 +138,46 @@ object HelloWorld {
       val nodei = nodes.find((n: NodeGrid) => n.id == e.nodei).get
       val nodej = nodes.find((n: NodeGrid) => n.id == e.nodej).get
 
-      addEdge(acc, nodei, nodej, e.length.get, e.id)
+      val existingNodei = graph.nodes.find(_.value.id == nodei.id)
+      val existingNodej = graph.nodes.find(_.value.id == nodej.id)
+
+      val updatedGraphWithNodei = existingNodei match {
+        case None =>
+          acc
+        case _ =>
+          val a = updateNode(acc, existingNodei.get.value)
+          a
+      }
+
+      val updatedGraphWithNodej = existingNodej match {
+        case None =>
+          updatedGraphWithNodei
+        case _ =>
+          updateNode(updatedGraphWithNodei, existingNodej.get.value)
+      }
+
+      addEdge(updatedGraphWithNodej, nodei, nodej, e.length.get, e.id)
+
+//      addEdge(acc, nodei, nodej, e.length.get, e.id)
     })
   }
 
-  def addGraphsFromNodeGrid(graph: Graph[NodeGrid, WLkUnDiEdge], grid: GridIndex, node: NodeGrid): Graph[NodeGrid, WLkUnDiEdge] = {
-    val gridLoc = grid.getGridLocation(node)
+  def updateNode(graph: Graph[NodeGrid, WLkUnDiEdge], node: NodeGrid): Graph[NodeGrid, WLkUnDiEdge] = {
+    def deletedNode = graph.nodes.filter(_.toOuter.id == node.id).head
+
+    def newEdges = graph.get(deletedNode).edges.map(e => {
+      val nodeNeighbor = e.nodes.filterNot(n => n == deletedNode).head.toOuter
+      val edgeWeight = e.weight
+      val edgeLabel = e.label
+      WLkUnDiEdge(node, nodeNeighbor)(edgeWeight, edgeLabel)
+    })
+
+    val a = graph - deletedNode ++ newEdges
+    a
+  }
+
+  def addGraphsFromNodeGrid(graph: Graph[NodeGrid, WLkUnDiEdge], addedGrid: scala.collection.mutable.Set[GridLocation], grid: GridIndex, node: NodeGrid): Graph[NodeGrid, WLkUnDiEdge] = {
+    val gridLoc: GridLocation = grid.getGridLocation(node)
     val EdgesNodes(edges, nodes) = grid.getGridEdges(grid, gridLoc)
 
     addEdges(graph, nodes, edges)
@@ -160,6 +201,13 @@ object HelloWorld {
     val addedGraph = graph ++ graphNode1 ++ graphNode2
 
     val spO = n(addedGraph, fakeNode) shortestPathTo n(addedGraph, node)
+
+    val a = spO match {
+      case None =>
+        spO
+      case _ => spO
+    }
+
     spO.get.weight
   }
 
@@ -233,41 +281,116 @@ object HelloWorld {
     NodeGrid(node.id, node.x, node.y, tree, finalObjects)
   }
 
+  def deleteFromNode(id: Int, node: NodeGrid): NodeGrid = {
+    val obj = node.objects
+      .find(_.obj.id == id)
+      .get
+      .obj
 
-  def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
-    var queue: scala.collection.mutable.Queue[NodeGrid] = scala.collection.mutable.Queue[NodeGrid]()
-    var graph: Graph[NodeGrid, WLkUnDiEdge] = Graph()
+    val deletingEntries = obj.tuples.map(t =>
+      Entry(
+        Point(t.x.toFloat, t.y.toFloat),
+        EntryTuple(obj.id, t.p)
+      )
+    )
 
-    var updatedNodes: Set[NodeGrid] = Set()
-    var visitedNodes: Set[NodeGrid] = Set()
+    val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
 
-    val edgeId: Int = uncertainData match {
-      case UncertainObject(_, edgeId_, _, _, _, _) => edgeId_
+    val treeORemoved = node.tree.removeAll(deletingEntries)
+
+    val updatedOverlappedObjects = pdrOverlappedObjects.map {
+      case q@NodeObject(_, _, false) => q
+      case q@NodeObject(obj_, _, isImpossible) =>
+        val skyPr = SkyPrX(treeORemoved, obj.id)
+        NodeObject(obj_, skyPr, isImpossible)
     }
 
-    var edge: Edge = grid.findEdgeById(edgeId).get
+    val objectsORemoved = node.objects.filterNot(_.obj.id == id)
+
+    NodeGrid(node.id, node.x, node.y, treeORemoved, objectsORemoved)
+  }
+
+  def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
+    var queue: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
+    var graph: Graph[NodeGrid, WLkUnDiEdge] = Graph()
+
+    var updatedNodes: Set[Int] = Set()
+    var visitedNodes: Set[Int] = Set()
+
+    val obj = uncertainData match {
+      case uncertainData: UncertainObject =>
+        uncertainData.asInstanceOf[UncertainObject]
+      case StreamDelete(objectId) =>
+        grid.getObject(objectId).get
+    }
+
+    uncertainData match {
+      case uncertainObject: UncertainObject =>
+        grid.addObjectToEdge(uncertainObject)
+        grid.addObject(obj)
+      case StreamDelete(objectId) =>
+        grid.removeObjectFromEdge(objectId)
+        grid.removeObject(objectId)
+    }
+
+    val addedGrid: mutable.Set[GridLocation] = scala.collection.mutable.Set()
+
+    var edge: Edge = grid.findEdgeById(obj.edgeId).get
 
     // enqueue
     val nodei = grid.findNodeById(edge.nodei).get
     val nodej = grid.findNodeById(edge.nodej).get
 
-    queue.enqueue(nodei)
-    queue.enqueue(nodej)
+    queue.enqueue(nodei.id)
+    queue.enqueue(nodej.id)
 
     while (queue.nonEmpty) {
-      var node = queue.dequeue()
+      var currentNode = grid.nodes.filter(_.id == queue.dequeue()).head
 
-      graph = addGraphsFromNodeGrid(graph, grid, node)
-      val len = calculateDistance(graph, uncertainData.asInstanceOf[UncertainObject], node)
+      graph = addGraphsFromNodeGrid(graph, addedGrid, grid, currentNode)
+      currentNode = graph.nodes.filter((x: Graph[NodeGrid, WLkUnDiEdge]#NodeT) => currentNode.id == x.value.id).head.value
+      val len = calculateDistance(graph, obj, currentNode)
 
       if (len < D_EPSILON) {
-        node = insertToNode(uncertainData.asInstanceOf[UncertainObject], node)
-        grid.updateNode(node)
+        var node = uncertainData match {
+          case UncertainObject(_, _, _, _, _, _) =>
+            insertToNode(uncertainData.asInstanceOf[UncertainObject], currentNode)
+          case StreamDelete(id) =>
+            deleteFromNode(id, currentNode)
+        }
 
-        node
+        grid.updateNode(node)
+        graph = updateNode(graph, node)
+        currentNode = graph.nodes.filter((x: Graph[NodeGrid, WLkUnDiEdge]#NodeT) => currentNode.id == x.value.id).head.value
+        updatedNodes = updatedNodes + node.id
+
+//        println(currentNode.toString)
+        val neighborNodes = graph.get(currentNode)
+          .neighbors
+          .map(_.toOuter)
+
+        neighborNodes.foreach(node_ => {
+          if (!visitedNodes.contains(node_.id)) {
+            graph = addGraphsFromNodeGrid(graph, addedGrid, grid, node_)
+
+            queue.enqueue(node_.id)
+
+            visitedNodes = visitedNodes + node_.id
+          } else if (updatedNodes.contains(node_.id)) {
+            println("COMPUTE SKYLINE " + node_.toString)
+          }
+        })
       }
     }
 
+    grid.updateNodes(
+      graph.nodes
+        .filter((n: Graph[NodeGrid, WLkUnDiEdge]#NodeT) => updatedNodes.contains(n.value.id))
+        .map(_.value)
+        .toSet
+    )
+
+    println(prettyPrint(updatedNodes))
     grid
   }
 
@@ -304,14 +427,8 @@ object HelloWorld {
   }
 
   def SkyPrX(tree: RTree[EntryTuple], objectId: Int): Double = {
-
     val X = tree.entries.filter(_.value.n == objectId).toSet
-//    tree.entries
-//      .map(e => {
-//        val skyPrx = SkyPrx(tree, X, e)
-//        e.value.prob * skyPrx
-//      })
-//      .sum
+
     X.map(x => {
         val skyPrx = SkyPrx(tree, X, x)
         x.value.prob * skyPrx
@@ -335,24 +452,24 @@ object HelloWorld {
     )
 
     val table_edges: Set[Edge] = Set(
-      Edge(1, 1, 2, None, None),
-      Edge(2, 1, 3, None, None),
-      Edge(3, 2, 5, None, None),
-      Edge(4, 3, 4, None, None),
-      Edge(4, 3, 6, None, None),
-      Edge(5, 4, 5, None, None),
-      Edge(6, 4, 7, None, None),
-      Edge(7, 5, 8, None, None),
-      Edge(8, 6, 7, None, None),
-      Edge(9, 7, 8, None, None)
+      Edge(1, 1, 2, None, None, Set()),
+      Edge(2, 1, 3, None, None, Set()),
+      Edge(3, 2, 5, None, None, Set()),
+      Edge(4, 3, 4, None, None, Set()),
+      Edge(4, 3, 6, None, None, Set()),
+      Edge(5, 4, 5, None, None, Set()),
+      Edge(6, 4, 7, None, None, Set()),
+      Edge(7, 5, 8, None, None, Set()),
+      Edge(8, 6, 7, None, None, Set()),
+      Edge(9, 7, 8, None, None, Set())
     )
 
     val streams: Set[UncertainStream] = Set(
       UncertainObject(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3)), Box(4, 5, 7, 7), isPossible = true),
       UncertainObject(2, 2, 0.5, Set(UTuple(6, 8, .6), UTuple(4, 4, .1), UTuple(7, 6, .3)), Box(4, 4, 7, 8), isPossible = true),
-      UncertainObject(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4)), Box(5, 6, 6, 6), isPossible = true),
-      UncertainObject(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5)), Box(1, 2, 3, 4), isPossible = true)
-      //    StreamDelete(1)
+      StreamDelete(1)
+//      UncertainObject(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4)), Box(5, 6, 6, 6), isPossible = true),
+//      UncertainObject(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5)), Box(1, 2, 3, 4), isPossible = true)
     )
 
     var grid = new GridIndex()

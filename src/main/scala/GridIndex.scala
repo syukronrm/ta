@@ -19,9 +19,40 @@ class GridIndex() {
 
   def isObjectExist(obj: UncertainObject): Boolean = this.uncertainDatas.contains(obj)
   def getObject(objectId: Int): Option[UncertainObject] = this.uncertainDatas.find(u => u.id == objectId)
-  def addObject(obj: UncertainObject): Unit = this.uncertainDatas = this.uncertainDatas + obj
-  def removeObject(objectId: Int): Unit =
-    this.uncertainDatas = this.uncertainDatas.filterNot((n: UncertainObject) => n.id == objectId)
+  def addObject(obj: UncertainObject): Unit =
+    this.uncertainDatas = this.uncertainDatas + obj
+
+  def addObjectToEdge(obj: UncertainObject): Unit = {
+    val e = this.edges.find(_.id == obj.edgeId).get
+    this.edges = this.edges - e + Edge(e.id, e.nodei, e.nodej, e.length, e.g, e.objects + obj)
+  }
+
+  def removeObjectFromEdge(objectId: Int): Unit = {
+    val o = this.uncertainDatas.find(_.id == objectId).get
+    val e = this.edges.find(_.id == o.edgeId).get
+
+    this.edges = this.edges - e + Edge(e.id, e.nodei, e.nodej, e.length, e.g, e.objects - o)
+  }
+
+  def removeObject(objectId: Int): Unit = {
+    val o = this.uncertainDatas.find(_.id == objectId).get
+
+    this.uncertainDatas = this.uncertainDatas - o
+  }
+
+  def getEdgeIdByObjectId(objectId: Int): Int =
+    this.uncertainDatas.find(_.id == objectId).get.edgeId
+
+  def updateNodes(nodes: Set[NodeGrid]): Unit = {
+    val updatedNodeIds = nodes.map(_.id)
+
+    this.nodes =
+      this.nodes
+        .filterNot(n => {
+          updatedNodeIds.contains(n.id)
+        })
+        .++(nodes)
+  }
 
   def addNode(node: NodeGrid): Unit = this.nodes = this.nodes + node
   def addNodes(nodes: Set[NodeGrid]): Unit = this.nodes = this.nodes ++ nodes
@@ -69,7 +100,7 @@ class GridIndex() {
     val length = getLength(x1, y1, x2, y2)
     val g = getGridLocation(nodei.get)
 
-    Edge(edge.id, edge.nodei, edge.nodej, Some(length), Some(g))
+    Edge(edge.id, edge.nodei, edge.nodej, Some(length), Some(g), Set())
   }
 
   def getGridLocation(node: NodeGrid): GridLocation = {

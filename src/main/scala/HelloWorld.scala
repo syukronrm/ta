@@ -157,8 +157,6 @@ object HelloWorld {
       }
 
       addEdge(updatedGraphWithNodej, nodei, nodej, e.length.get, e.id)
-
-//      addEdge(acc, nodei, nodej, e.length.get, e.id)
     })
   }
 
@@ -176,16 +174,37 @@ object HelloWorld {
     a
   }
 
-  def addGraphsFromNodeGrid(graph: Graph[NodeGrid, WLkUnDiEdge], addedGrid: scala.collection.mutable.Set[GridLocation], grid: GridIndex, node: NodeGrid): Graph[NodeGrid, WLkUnDiEdge] = {
-    val gridLoc: GridLocation = grid.getGridLocation(node)
-    val EdgesNodes(edges, nodes) = grid.getGridEdges(grid, gridLoc)
-
-    addEdges(graph, nodes, edges)
-  }
-
   def n(g: Graph[NodeGrid, WLkUnDiEdge], outer: NodeGrid): g.NodeT = g get outer
 
   def calculateDistance(graph: Graph[NodeGrid, WLkUnDiEdge], obj: UncertainObject, node: NodeGrid): Double = {
+    val fakeNode = NodeGrid(0, 0, 0, RTree(), Set())
+    val edgeFakeNode = graph.edges.find(_.label == obj.edgeId).get
+
+    val node1 = edgeFakeNode._1.toOuter
+    val lenToNode1 = edgeFakeNode.weight * obj.pos
+
+    val node2 = edgeFakeNode._2.toOuter
+    val lenToNode2 = edgeFakeNode.weight * (1 - obj.pos)
+
+    val graphNode1: Graph[NodeGrid, WLkUnDiEdge] = Graph(WLkUnDiEdge(node1, fakeNode)(lenToNode1, 0))
+    val graphNode2: Graph[NodeGrid, WLkUnDiEdge] = Graph(WLkUnDiEdge(node2, fakeNode)(lenToNode2, 0))
+
+    val addedGraph = graph ++ graphNode1 ++ graphNode2
+
+    val spO = n(addedGraph, fakeNode) shortestPathTo n(addedGraph, node)
+
+    val a = spO match {
+      case None =>
+        spO
+      case _ => spO
+    }
+
+    spO.get.weight
+  }
+
+  def calculateDistance(graph: Graph[NodeGrid, WLkUnDiEdge], obj: UncertainObject, nodeId: Int): Double = {
+    val node = graph.nodes.find(_.value.id == nodeId).get
+
     val fakeNode = NodeGrid(0, 0, 0, RTree(), Set())
     val edgeFakeNode = graph.edges.find(_.label == obj.edgeId).get
 
@@ -281,6 +300,63 @@ object HelloWorld {
     NodeGrid(node.id, node.x, node.y, tree, finalObjects)
   }
 
+  def insertToNode(node: NodeGrid, obj: UncertainObject): NodeGrid = {
+    val incomingEntries = obj.tuples.map(t =>
+      Entry(
+        Point(t.x.toFloat, t.y.toFloat),
+        EntryTuple(obj.id, t.p)
+      )
+    )
+
+    // FIND OBJECT OVERLAPPED PDR
+    val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
+
+    val updatedOverlappedObjects = pdrOverlappedObjects.map(q => {
+      val ddrObj = expandDdr(obj.bbox)
+      var bboxQ = q.obj.bbox
+      if (ddrObj.contains(bboxQ)) {
+        NodeObject(q.obj, q.skyProb, isImpossible = true)
+      } else {
+        val bbox = expandDdr(obj.bbox)
+
+        val objProb = node.tree
+          .search(bbox)
+          .map(a => {
+            a
+          })
+          .filter(_.value.n == q.obj.id)
+          .map(a => {
+            a
+          })
+          .foldLeft(0.0)((acc, e) => acc + e.value.prob)
+
+        if (objProb > (1 - P_THRESHOLD)) {
+          NodeObject(q.obj, q.skyProb, isImpossible = true)
+        } else {
+          val skyProb = SkyPrX(node.tree.insertAll(incomingEntries), q.obj.id)
+          NodeObject(q.obj, skyProb, q.isImpossible)
+        }
+      }
+    })
+
+    // INSERT OBJECT TO TREE
+    val tree = node.tree.insertAll(incomingEntries)
+
+    val updatedObjects = node.objects.map(o => {
+      val updated = updatedOverlappedObjects.find(_.obj.id == o.obj.id)
+
+      if (updated.nonEmpty)
+        updated.get
+      else
+        o
+    })
+
+    val skyProbU = SkyPrX(tree, obj.id)
+    val finalObjects = updatedObjects + NodeObject(obj, skyProbU, isImpossible = false)
+    NodeGrid(node.id, node.x, node.y, tree, finalObjects)
+  }
+
+
   def deleteFromNode(id: Int, node: NodeGrid): NodeGrid = {
     val obj = node.objects
       .find(_.obj.id == id)
@@ -310,87 +386,119 @@ object HelloWorld {
     NodeGrid(node.id, node.x, node.y, treeORemoved, objectsORemoved)
   }
 
-  def theAlgorithm(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
-    var queue: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
-    var graph: Graph[NodeGrid, WLkUnDiEdge] = Graph()
+  def deleteFromNode(node: NodeGrid, id: Int): NodeGrid = {
+    val obj = node.objects
+      .find(_.obj.id == id)
+      .get
+      .obj
+
+    val deletingEntries = obj.tuples.map(t =>
+      Entry(
+        Point(t.x.toFloat, t.y.toFloat),
+        EntryTuple(obj.id, t.p)
+      )
+    )
+
+    val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
+
+    val treeORemoved = node.tree.removeAll(deletingEntries)
+
+    val updatedOverlappedObjects = pdrOverlappedObjects.map {
+      case q@NodeObject(_, _, false) => q
+      case q@NodeObject(obj_, _, isImpossible) =>
+        val skyPr = SkyPrX(treeORemoved, obj.id)
+        NodeObject(obj_, skyPr, isImpossible)
+    }
+
+    val objectsORemoved = node.objects.filterNot(_.obj.id == id)
+
+    NodeGrid(node.id, node.x, node.y, treeORemoved, objectsORemoved)
+  }
+
+  def addTempGraph(g: Graph[NodeGrid, WLkUnDiEdge], grid: GridIndex, nodeId: Int): Graph[NodeGrid, WLkUnDiEdge] = {
+    val node = grid.nodes.find(_.id == nodeId).get
+    val gridLoc: GridLocation = grid.getGridLocation(node)
+    val EdgesNodes(edges, nodes) = grid.getGridEdges(grid, gridLoc)
+
+    addEdges(g, nodes, edges)
+  }
+
+  def myAlgo(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
+    var Q: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
+    var tempGrid: Graph[NodeGrid, WLkUnDiEdge] = Graph()
 
     var updatedNodes: Set[Int] = Set()
     var visitedNodes: Set[Int] = Set()
 
     val obj = uncertainData match {
       case uncertainData: UncertainObject =>
+        val objInsert = uncertainData.asInstanceOf[UncertainObject]
+        println("INSERT object " + objInsert.id + " edge " + objInsert.edgeId + " pos " + objInsert.pos)
         uncertainData.asInstanceOf[UncertainObject]
       case StreamDelete(objectId) =>
         grid.getObject(objectId).get
     }
-
-    uncertainData match {
-      case uncertainObject: UncertainObject =>
-        grid.addObjectToEdge(uncertainObject)
-        grid.addObject(obj)
-      case StreamDelete(objectId) =>
-        grid.removeObjectFromEdge(objectId)
-        grid.removeObject(objectId)
-    }
-
-    val addedGrid: mutable.Set[GridLocation] = scala.collection.mutable.Set()
 
     var edge: Edge = grid.findEdgeById(obj.edgeId).get
 
     // enqueue
     val nodei = grid.findNodeById(edge.nodei).get
     val nodej = grid.findNodeById(edge.nodej).get
+    Q.enqueue(nodei.id)
 
-    queue.enqueue(nodei.id)
-    queue.enqueue(nodej.id)
+    tempGrid = addTempGraph(tempGrid, grid, nodei.id)
 
-    while (queue.nonEmpty) {
-      var currentNode = grid.nodes.filter(_.id == queue.dequeue()).head
+    while (Q.nonEmpty) {
+      val currentNodeId = Q.dequeue()
+      println("dequeue " + currentNodeId)
 
-      graph = addGraphsFromNodeGrid(graph, addedGrid, grid, currentNode)
-      currentNode = graph.nodes.filter((x: Graph[NodeGrid, WLkUnDiEdge]#NodeT) => currentNode.id == x.value.id).head.value
-      val len = calculateDistance(graph, obj, currentNode)
-
+      val len = calculateDistance(tempGrid, obj, currentNodeId)
+      println("  distance to obj " + len)
       if (len < D_EPSILON) {
-        var node = uncertainData match {
-          case UncertainObject(_, _, _, _, _, _) =>
-            insertToNode(uncertainData.asInstanceOf[UncertainObject], currentNode)
-          case StreamDelete(id) =>
-            deleteFromNode(id, currentNode)
+        var updatedNode = uncertainData match {
+          case uncertainData: UncertainObject =>
+            val currentNode = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
+            insertToNode(currentNode, uncertainData.asInstanceOf[UncertainObject])
+          case StreamDelete(objectId) =>
+            val currentNode = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
+            deleteFromNode(currentNode, objectId)
         }
 
-        grid.updateNode(node)
-        graph = updateNode(graph, node)
-        currentNode = graph.nodes.filter((x: Graph[NodeGrid, WLkUnDiEdge]#NodeT) => currentNode.id == x.value.id).head.value
-        updatedNodes = updatedNodes + node.id
+        tempGrid = updateNode(tempGrid, updatedNode)
+        updatedNodes = updatedNodes + updatedNode.id
 
-//        println(currentNode.toString)
-        val neighborNodes = graph.get(currentNode)
+//      TODO: PINDAH SINI SKYLINE COMPUTE
+
+        val node = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
+        val neighborNodes = tempGrid.find(node)
+          .get
           .neighbors
           .map(_.toOuter)
 
-        neighborNodes.foreach(node_ => {
-          if (!visitedNodes.contains(node_.id)) {
-            graph = addGraphsFromNodeGrid(graph, addedGrid, grid, node_)
+        println("  neighbors " + neighborNodes.map(_.id).toString())
 
-            queue.enqueue(node_.id)
+        neighborNodes.foreach(n => {
+          if (!visitedNodes.contains(n.id)) {
+            tempGrid = addTempGraph(tempGrid, grid, n.id)
 
-            visitedNodes = visitedNodes + node_.id
-          } else if (updatedNodes.contains(node_.id)) {
-            println("COMPUTE SKYLINE " + node_.toString)
+            Q.enqueue(n.id)
+            println("    enqueue " + n.id)
+
+            visitedNodes = visitedNodes + n.id
+            println("    visit " + n.id)
+          } else if (updatedNodes.contains(n.id)) {
+            println("    COMPUTE SKYLINE " + n.id)
           }
         })
       }
     }
 
-    grid.updateNodes(
-      graph.nodes
-        .filter((n: Graph[NodeGrid, WLkUnDiEdge]#NodeT) => updatedNodes.contains(n.value.id))
-        .map(_.value)
-        .toSet
-    )
+    updateGrid(grid, tempGrid)
+  }
 
-    println(prettyPrint(updatedNodes))
+  def updateGrid(grid: GridIndex, graph: Graph[NodeGrid, WLkUnDiEdge]): GridIndex = {
+    grid.updateNodes(graph.nodes.toOuter)
+
     grid
   }
 
@@ -466,8 +574,8 @@ object HelloWorld {
 
     val streams: Set[UncertainStream] = Set(
       UncertainObject(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3)), Box(4, 5, 7, 7), isPossible = true),
-      UncertainObject(2, 2, 0.5, Set(UTuple(6, 8, .6), UTuple(4, 4, .1), UTuple(7, 6, .3)), Box(4, 4, 7, 8), isPossible = true),
-      StreamDelete(1)
+//      UncertainObject(2, 2, 0.5, Set(UTuple(6, 8, .6), UTuple(4, 4, .1), UTuple(7, 6, .3)), Box(4, 4, 7, 8), isPossible = true),
+//      StreamDelete(1)
 //      UncertainObject(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4)), Box(5, 6, 6, 6), isPossible = true),
 //      UncertainObject(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5)), Box(1, 2, 3, 4), isPossible = true)
     )
@@ -480,7 +588,7 @@ object HelloWorld {
     grid.calculateEdgesLengthAndGrid()
 
     streams.foldLeft(streams) {(acc, stream) => {
-      theAlgorithm(grid, stream)
+      myAlgo(grid, stream)
       acc
     }}
   }

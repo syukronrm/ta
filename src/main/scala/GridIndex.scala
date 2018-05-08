@@ -7,7 +7,7 @@ class GridIndex() {
   var GRID_WIDTH = 5
   var GRID_HEIGHT = 5
 
-  var edges: Set[Edge] = Set()
+  var edges: Set[EdgeGrid] = Set()
   var nodes: Set[NodeGrid] = Set()
   var uncertainDatas: Set[UncertainObject] = Set()
 
@@ -24,14 +24,14 @@ class GridIndex() {
 
   def addObjectToEdge(obj: UncertainObject): Unit = {
     val e = this.edges.find(_.id == obj.edgeId).get
-    this.edges = this.edges - e + Edge(e.id, e.nodei, e.nodej, e.length, e.g, e.objects + obj)
+    this.edges = this.edges - e + EdgeGrid(e.id, e.nodei, e.nodej, e.length, e.g, e.objects + obj)
   }
 
   def removeObjectFromEdge(objectId: Int): Unit = {
     val o = this.uncertainDatas.find(_.id == objectId).get
     val e = this.edges.find(_.id == o.edgeId).get
 
-    this.edges = this.edges - e + Edge(e.id, e.nodei, e.nodej, e.length, e.g, e.objects - o)
+    this.edges = this.edges - e + EdgeGrid(e.id, e.nodei, e.nodej, e.length, e.g, e.objects - o)
   }
 
   def removeObject(objectId: Int): Unit = {
@@ -57,7 +57,7 @@ class GridIndex() {
   def addNode(node: NodeGrid): Unit = this.nodes = this.nodes + node
   def addNodes(nodes: Set[NodeGrid]): Unit = this.nodes = this.nodes ++ nodes
 
-  def addEdge(edge: Edge): Unit = {
+  def addEdge(edge: EdgeGrid): Unit = {
     val nodei: Int = edge.nodei
 
     if (!isNodeExist(nodei)) {
@@ -67,8 +67,8 @@ class GridIndex() {
 
     this.edges = this.edges + edge
   }
-  def addEdges(edges: Set[Edge]): Unit = {
-    edges.foreach((e: Edge) => {
+  def addEdges(edges: Set[EdgeGrid]): Unit = {
+    edges.foreach((e: EdgeGrid) => {
       addEdge(e)
     })
   }
@@ -88,9 +88,9 @@ class GridIndex() {
   }
 
   def findNodeById(nodeId: Int): Option[NodeGrid] = this.nodes.find((n: NodeGrid) => n.id == nodeId)
-  def findEdgeById(edgeId: Int): Option[Edge] = this.edges.find((e: Edge) => e.id == edgeId)
+  def findEdgeById(edgeId: Int): Option[EdgeGrid] = this.edges.find((e: EdgeGrid) => e.id == edgeId)
 
-  def fillLengthAndGridLocation(edge: Edge): Edge = {
+  def fillLengthAndGridLocation(edge: EdgeGrid): EdgeGrid = {
     val nodei = this.findNodeById(edge.nodei)
     val nodej = this.findNodeById(edge.nodej)
 
@@ -100,7 +100,7 @@ class GridIndex() {
     val length = getLength(x1, y1, x2, y2)
     val g = getGridLocation(nodei.get)
 
-    Edge(edge.id, edge.nodei, edge.nodej, Some(length), Some(g), Set())
+    EdgeGrid(edge.id, edge.nodei, edge.nodej, Some(length), Some(g), Set())
   }
 
   def getGridLocation(node: NodeGrid): GridLocation = {
@@ -117,7 +117,7 @@ class GridIndex() {
     math.sqrt(height * height + width * width)
   }
 
-  def getNodeIds(edges: Set[Edge]): Set[Int] =
+  def getNodeIds(edges: Set[EdgeGrid]): Set[Int] =
     edges.foldLeft(Set(): Set[Int]) {(acc, i) =>  acc + i.nodei + i.nodej}
 
   def getNodes(grid: GridIndex, gx: Int, gy: Int): Set[NodeGrid] = {
@@ -126,16 +126,16 @@ class GridIndex() {
     })
   }
 
-  def getEdgesFromNodes(grid: GridIndex, nodes: Set[NodeGrid]): Set[Edge] = {
+  def getEdgesFromNodes(grid: GridIndex, nodes: Set[NodeGrid]): Set[EdgeGrid] = {
     val nodeIds = nodes.map((n: NodeGrid) => n.id)
 
-    grid.edges.filter((e: Edge) => {
+    grid.edges.filter((e: EdgeGrid) => {
       nodeIds.contains(e.nodei) | nodeIds.contains(e.nodej)
     })
   }
 
-  def getNodesFromEdges(grid: GridIndex, edges: Set[Edge]): Set[NodeGrid] = {
-    val nodeIds = edges.flatMap((e: Edge) => Set(e.nodei, e.nodej))
+  def getNodesFromEdges(grid: GridIndex, edges: Set[EdgeGrid]): Set[NodeGrid] = {
+    val nodeIds = edges.flatMap((e: EdgeGrid) => Set(e.nodei, e.nodej))
 
     grid.nodes.filter((n: NodeGrid) => nodeIds.contains(n.id))
   }

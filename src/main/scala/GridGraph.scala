@@ -11,7 +11,7 @@ object GridGraph {
 
   private def n(g: Graph[String, WUnDiEdge], outer: String): g.NodeT = g get outer
 
-  def addEdgeClass(graph: Graph[String, WUnDiEdge], edge: Edge): Graph[String, WUnDiEdge] =
+  def addEdgeClass(graph: Graph[String, WUnDiEdge], edge: EdgeGrid): Graph[String, WUnDiEdge] =
     addEdge(graph, "n" + edge.nodei.toString, "n" + edge.nodej.toString, edge.length.get)
 
   def addEdge(graph: Graph[String, WUnDiEdge], nodei: String, nodej: String, weight: Double): Graph[String, WUnDiEdge] =

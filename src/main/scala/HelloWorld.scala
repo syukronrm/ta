@@ -40,8 +40,8 @@ case class NodeObject(obj: UncertainObject, skyProb: Double, isImpossible: Boole
 case class NodeGrid(id: Int, x: Double, y: Double, tree: RTree[EntryTuple], objects: Set[NodeObject])
 
 case class GridLocation(x: Int, y: Int) {}
-case class Edge(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation], objects: Set[UncertainObject])
-case class EdgesNodes(edges: Set[Edge], nodes: Set[NodeGrid])
+case class EdgeGrid(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation], objects: Set[UncertainObject])
+case class EdgesNodes(edges: Set[EdgeGrid], nodes: Set[NodeGrid])
 
 
 object HelloBox {
@@ -133,7 +133,7 @@ object HelloWorld {
     graph ++ Graph(WLkUnDiEdge(nodei, nodej)(weight, key))
   }
 
-  def addEdges(graph: Graph[NodeGrid, WLkUnDiEdge], nodes: Set[NodeGrid], edges: Set[Edge]): Graph[NodeGrid, WLkUnDiEdge] = {
+  def addEdges(graph: Graph[NodeGrid, WLkUnDiEdge], nodes: Set[NodeGrid], edges: Set[EdgeGrid]): Graph[NodeGrid, WLkUnDiEdge] = {
     edges.foldLeft(graph)((acc, e) => {
       val nodei = nodes.find((n: NodeGrid) => n.id == e.nodei).get
       val nodej = nodes.find((n: NodeGrid) => n.id == e.nodej).get
@@ -439,7 +439,7 @@ object HelloWorld {
         grid.getObject(objectId).get
     }
 
-    var edge: Edge = grid.findEdgeById(obj.edgeId).get
+    var edge: EdgeGrid = grid.findEdgeById(obj.edgeId).get
 
     // enqueue
     val nodei = grid.findNodeById(edge.nodei).get
@@ -559,17 +559,17 @@ object HelloWorld {
       NodeGrid(8, 16, 12, RTree(), Set())
     )
 
-    val table_edges: Set[Edge] = Set(
-      Edge(1, 1, 2, None, None, Set()),
-      Edge(2, 1, 3, None, None, Set()),
-      Edge(3, 2, 5, None, None, Set()),
-      Edge(4, 3, 4, None, None, Set()),
-      Edge(4, 3, 6, None, None, Set()),
-      Edge(5, 4, 5, None, None, Set()),
-      Edge(6, 4, 7, None, None, Set()),
-      Edge(7, 5, 8, None, None, Set()),
-      Edge(8, 6, 7, None, None, Set()),
-      Edge(9, 7, 8, None, None, Set())
+    val table_edges: Set[EdgeGrid] = Set(
+      EdgeGrid(1, 1, 2, None, None, Set()),
+      EdgeGrid(2, 1, 3, None, None, Set()),
+      EdgeGrid(3, 2, 5, None, None, Set()),
+      EdgeGrid(4, 3, 4, None, None, Set()),
+      EdgeGrid(4, 3, 6, None, None, Set()),
+      EdgeGrid(5, 4, 5, None, None, Set()),
+      EdgeGrid(6, 4, 7, None, None, Set()),
+      EdgeGrid(7, 5, 8, None, None, Set()),
+      EdgeGrid(8, 6, 7, None, None, Set()),
+      EdgeGrid(9, 7, 8, None, None, Set())
     )
 
     val streams: Set[UncertainStream] = Set(

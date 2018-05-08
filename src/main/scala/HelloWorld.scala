@@ -126,11 +126,11 @@ object HelloWorld {
     }
   }
 
-  def addEdge(graph: Graph[NodeGrid, WLkUnDiEdge], nodei: NodeGrid, nodej: NodeGrid, weight: Double, key: Int): Graph[NodeGrid, WLkUnDiEdge] = {
+  def addEdge(graph: Graph[NodeGrid, WLkUnDiEdge], nodei: NodeGrid, nodej: NodeGrid, edge: EdgeGrid): Graph[NodeGrid, WLkUnDiEdge] = {
 
     // SAVE ALL EDGES TO
 
-    graph ++ Graph(WLkUnDiEdge(nodei, nodej)(weight, key))
+    graph ++ Graph(WLkUnDiEdge(nodei, nodej)(edge.length.get, edge))
   }
 
   def addEdges(graph: Graph[NodeGrid, WLkUnDiEdge], nodes: Set[NodeGrid], edges: Set[EdgeGrid]): Graph[NodeGrid, WLkUnDiEdge] = {
@@ -156,7 +156,7 @@ object HelloWorld {
           updateNode(updatedGraphWithNodei, existingNodej.get.value)
       }
 
-      addEdge(updatedGraphWithNodej, nodei, nodej, e.length.get, e.id)
+      addEdge(updatedGraphWithNodej, nodei, nodej, e)
     })
   }
 
@@ -176,37 +176,13 @@ object HelloWorld {
 
   def n(g: Graph[NodeGrid, WLkUnDiEdge], outer: NodeGrid): g.NodeT = g get outer
 
-  def calculateDistance(graph: Graph[NodeGrid, WLkUnDiEdge], obj: UncertainObject, node: NodeGrid): Double = {
-    val fakeNode = NodeGrid(0, 0, 0, RTree(), Set())
-    val edgeFakeNode = graph.edges.find(_.label == obj.edgeId).get
-
-    val node1 = edgeFakeNode._1.toOuter
-    val lenToNode1 = edgeFakeNode.weight * obj.pos
-
-    val node2 = edgeFakeNode._2.toOuter
-    val lenToNode2 = edgeFakeNode.weight * (1 - obj.pos)
-
-    val graphNode1: Graph[NodeGrid, WLkUnDiEdge] = Graph(WLkUnDiEdge(node1, fakeNode)(lenToNode1, 0))
-    val graphNode2: Graph[NodeGrid, WLkUnDiEdge] = Graph(WLkUnDiEdge(node2, fakeNode)(lenToNode2, 0))
-
-    val addedGraph = graph ++ graphNode1 ++ graphNode2
-
-    val spO = n(addedGraph, fakeNode) shortestPathTo n(addedGraph, node)
-
-    val a = spO match {
-      case None =>
-        spO
-      case _ => spO
-    }
-
-    spO.get.weight
-  }
-
   def calculateDistance(graph: Graph[NodeGrid, WLkUnDiEdge], obj: UncertainObject, nodeId: Int): Double = {
     val node = graph.nodes.find(_.value.id == nodeId).get
 
     val fakeNode = NodeGrid(0, 0, 0, RTree(), Set())
-    val edgeFakeNode = graph.edges.find(_.label == obj.edgeId).get
+    val edgeFakeNode = graph.edges.find(e => {
+      e.label.asInstanceOf[EdgeGrid].id == obj.edgeId
+    }).get
 
     val node1 = edgeFakeNode._1.toOuter
     val lenToNode1 = edgeFakeNode.weight * obj.pos
@@ -251,7 +227,6 @@ object HelloWorld {
       )
     )
 
-    // FIND OBJECT OVERLAPPED PDR
     val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
 
     val updatedOverlappedObjects = pdrOverlappedObjects.map(q => {
@@ -276,7 +251,6 @@ object HelloWorld {
         if (objProb > (1 - P_THRESHOLD)) {
           NodeObject(q.obj, q.skyProb, isImpossible = true)
         } else {
-          // TODO UPDATE SKYPROB q
           val skyProb = SkyPrX(node.tree.insertAll(incomingEntries), q.obj.id)
           NodeObject(q.obj, skyProb, q.isImpossible)
         }

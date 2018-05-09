@@ -3,7 +3,6 @@ import HelloWorld.updateNode
 import scala.collection.immutable.Set
 import archery._
 import scalax.collection.edge.{WLkUnDiEdge, WUnDiEdge}
-import scalax.collection.Graph
 import scalax.collection.GraphPredef._
 import scalax.collection.edge.Implicits._
 import scalax.collection.Graph
@@ -36,13 +35,14 @@ case class StreamDelete(id: Int)
 
 case class UTuple(x: Double, y: Double, p: Double)
 case class EntryTuple(n: Int, prob: Double)
-case class NodeObject(obj: UncertainObject, skyProb: Double, isImpossible: Boolean)
+case class NodeObject(obj: UncertainObject, skyProb: Double, isImpossible: Boolean, distance: Double)
 case class NodeGrid(id: Int, x: Double, y: Double, tree: RTree[EntryTuple], objects: Set[NodeObject])
 
 case class GridLocation(x: Int, y: Int) {}
 case class EdgeGrid(id: Int, nodei: Int, nodej: Int, length: Option[Double], g: Option[GridLocation], objects: Set[UncertainObject])
 case class EdgesNodes(edges: Set[EdgeGrid], nodes: Set[NodeGrid])
 
+case class SkylinePoint(objectId: Int, edgeId: Int, distance: Double, nodeId: Int)
 
 object HelloBox {
   def expandPdr(bbox: Box): Box = {
@@ -197,12 +197,6 @@ object HelloWorld {
 
     val spO = n(addedGraph, fakeNode) shortestPathTo n(addedGraph, node)
 
-    val a = spO match {
-      case None =>
-        spO
-      case _ => spO
-    }
-
     spO.get.weight
   }
 
@@ -219,62 +213,7 @@ object HelloWorld {
     objects
   }
 
-  def insertToNode(obj: UncertainObject, node: NodeGrid): NodeGrid = {
-    val incomingEntries = obj.tuples.map(t =>
-      Entry(
-        Point(t.x.toFloat, t.y.toFloat),
-        EntryTuple(obj.id, t.p)
-      )
-    )
-
-    val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
-
-    val updatedOverlappedObjects = pdrOverlappedObjects.map(q => {
-      val ddrObj = expandDdr(obj.bbox)
-      var bboxQ = q.obj.bbox
-      if (ddrObj.contains(bboxQ)) {
-        NodeObject(q.obj, q.skyProb, isImpossible = true)
-      } else {
-        val bbox = expandDdr(obj.bbox)
-
-        val objProb = node.tree
-          .search(bbox)
-          .map(a => {
-            a
-          })
-          .filter(_.value.n == q.obj.id)
-          .map(a => {
-            a
-          })
-          .foldLeft(0.0)((acc, e) => acc + e.value.prob)
-
-        if (objProb > (1 - P_THRESHOLD)) {
-          NodeObject(q.obj, q.skyProb, isImpossible = true)
-        } else {
-          val skyProb = SkyPrX(node.tree.insertAll(incomingEntries), q.obj.id)
-          NodeObject(q.obj, skyProb, q.isImpossible)
-        }
-      }
-    })
-
-    // INSERT OBJECT TO TREE
-    val tree = node.tree.insertAll(incomingEntries)
-
-    val updatedObjects = node.objects.map(o => {
-      val updated = updatedOverlappedObjects.find(_.obj.id == o.obj.id)
-
-      if (updated.nonEmpty)
-        updated.get
-      else
-        o
-    })
-
-    val skyProbU = SkyPrX(tree, obj.id)
-    val finalObjects = updatedObjects + NodeObject(obj, skyProbU, isImpossible = false)
-    NodeGrid(node.id, node.x, node.y, tree, finalObjects)
-  }
-
-  def insertToNode(node: NodeGrid, obj: UncertainObject): NodeGrid = {
+  def insertToNode(node: NodeGrid, obj: UncertainObject, distance: Double): NodeGrid = {
     val incomingEntries = obj.tuples.map(t =>
       Entry(
         Point(t.x.toFloat, t.y.toFloat),
@@ -287,9 +226,9 @@ object HelloWorld {
 
     val updatedOverlappedObjects = pdrOverlappedObjects.map(q => {
       val ddrObj = expandDdr(obj.bbox)
-      var bboxQ = q.obj.bbox
+      val bboxQ = q.obj.bbox
       if (ddrObj.contains(bboxQ)) {
-        NodeObject(q.obj, q.skyProb, isImpossible = true)
+        NodeObject(q.obj, q.skyProb, isImpossible = true, distance)
       } else {
         val bbox = expandDdr(obj.bbox)
 
@@ -305,10 +244,10 @@ object HelloWorld {
           .foldLeft(0.0)((acc, e) => acc + e.value.prob)
 
         if (objProb > (1 - P_THRESHOLD)) {
-          NodeObject(q.obj, q.skyProb, isImpossible = true)
+          NodeObject(q.obj, q.skyProb, isImpossible = true, distance)
         } else {
           val skyProb = SkyPrX(node.tree.insertAll(incomingEntries), q.obj.id)
-          NodeObject(q.obj, skyProb, q.isImpossible)
+          NodeObject(q.obj, skyProb, q.isImpossible, distance)
         }
       }
     })
@@ -326,7 +265,7 @@ object HelloWorld {
     })
 
     val skyProbU = SkyPrX(tree, obj.id)
-    val finalObjects = updatedObjects + NodeObject(obj, skyProbU, isImpossible = false)
+    val finalObjects = updatedObjects + NodeObject(obj, skyProbU, isImpossible = false, distance)
     NodeGrid(node.id, node.x, node.y, tree, finalObjects)
   }
 
@@ -349,13 +288,13 @@ object HelloWorld {
     val treeORemoved = node.tree.removeAll(deletingEntries)
 
     val updatedOverlappedObjects = pdrOverlappedObjects.map {
-      case q@NodeObject(_, _, false) => q
-      case q@NodeObject(obj_, _, isImpossible) =>
+      case q@NodeObject(_, _, false, _) => q
+      case q@NodeObject(obj_, _, isImpossible, distance) =>
         val skyPr = SkyPrX(treeORemoved, obj.id)
-        NodeObject(obj_, skyPr, isImpossible)
+        NodeObject(obj_, skyPr, isImpossible, distance)
     }
 
-    val objectsORemoved = node.objects.filterNot(_.obj.id == id)
+    val objectsORemoved = updatedOverlappedObjects.filterNot(_.obj.id == id)
 
     NodeGrid(node.id, node.x, node.y, treeORemoved, objectsORemoved)
   }
@@ -384,13 +323,13 @@ object HelloWorld {
     val treeORemoved = node.tree.removeAll(deletingEntries)
 
     val updatedOverlappedObjects = pdrOverlappedObjects.map {
-      case q@NodeObject(_, _, false) => q
-      case q@NodeObject(obj_, _, isImpossible) =>
+      case q@NodeObject(_, _, false, _) => q
+      case q@NodeObject(obj_, _, isImpossible, distance) =>
         val skyPr = SkyPrX(treeORemoved, obj.id)
-        NodeObject(obj_, skyPr, isImpossible)
+        NodeObject(obj_, skyPr, isImpossible, distance)
     }
 
-    val objectsORemoved = node.objects.filterNot(_.obj.id == id)
+    val objectsORemoved = updatedOverlappedObjects.filterNot(_.obj.id == id)
 
     NodeGrid(node.id, node.x, node.y, treeORemoved, objectsORemoved)
   }
@@ -405,11 +344,25 @@ object HelloWorld {
   }
 
   // TODO: COMPUTE TURNING POINT
-  def computeTurningPoint(graph: Graph[NodeGrid, WLkUnDiEdge], nodeId: Int): Unit = {
-    val node = graph.nodes.toOuter.find(_.id == nodeId).get
-    val nodeT = graph.get(node)
+  def computeTurningPoint(graph: Graph[NodeGrid, WLkUnDiEdge]): Unit = {
+    graph.edges.foreach(e => {
+      val nodeSId = e.label.asInstanceOf[EdgeGrid].nodei
+      val nodeEId = e.label.asInstanceOf[EdgeGrid].nodej
 
-    val edges = nodeT.edges.map(_.label.asInstanceOf[EdgeGrid])
+      val List(nodeS, nodeE) = if (e._1.toOuter.id == nodeSId) {
+        List(e._1.toOuter, e._2.toOuter)
+      } else {
+        List(e._2.toOuter, e._1.toOuter)
+      }
+
+      computeTurningPoint(nodeS, e.label.asInstanceOf[EdgeGrid], nodeE)
+    })
+  }
+
+  def computeTurningPoint(nodeS: NodeGrid, edge: EdgeGrid, nodeE: NodeGrid): Unit = {
+    val spNodeS = nodeS.objects
+    val spNodeE = nodeE.objects
+    val spEdge = edge.objects
 
 
   }
@@ -418,7 +371,7 @@ object HelloWorld {
     println("INITIAL NODES:")
     println(prettyPrint(grid.nodes))
 
-    var Q: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
+    val Q: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
     var tempGrid: Graph[NodeGrid, WLkUnDiEdge] = Graph()
 
     var updatedNodes: Set[Int] = Set()
@@ -439,12 +392,16 @@ object HelloWorld {
         grid.getObject(objectId).get
     }
 
-    var edge: EdgeGrid = grid.findEdgeById(obj.edgeId).get
+    val edge: EdgeGrid = grid.findEdgeById(obj.edgeId).get
 
     // enqueue
     val nodei = grid.findNodeById(edge.nodei).get
-    val nodej = grid.findNodeById(edge.nodej).get
+
     Q.enqueue(nodei.id)
+    println("enqueue " + nodei.id)
+
+    visitedNodes = visitedNodes + nodei.id
+    println("visit " + nodei.id)
 
     tempGrid = addTempGraph(tempGrid, grid, nodei.id)
 
@@ -452,14 +409,14 @@ object HelloWorld {
       val currentNodeId = Q.dequeue()
       println("dequeue " + currentNodeId)
 
-      val len = calculateDistance(tempGrid, obj, currentNodeId)
-      println("  distance to obj " + len)
-      if (len < D_EPSILON) {
-        var updatedNode = uncertainData match {
+      val distance = calculateDistance(tempGrid, obj, currentNodeId)
+      println("  distance to obj " + distance)
+      if (distance < D_EPSILON) {
+        val updatedNode = uncertainData match {
           case uncertainData: UncertainObject =>
             val currentNode = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
             println("  insert to node " + currentNode.id + " objId " + uncertainData.asInstanceOf[UncertainObject].id)
-            insertToNode(currentNode, uncertainData.asInstanceOf[UncertainObject])
+            insertToNode(currentNode, uncertainData.asInstanceOf[UncertainObject], distance)
           case StreamDelete(objectId) =>
             val currentNode = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
             println("  delete from node " + currentNode.id + " objId " + objectId)
@@ -470,7 +427,7 @@ object HelloWorld {
         grid.updateNode(updatedNode)
         updatedNodes = updatedNodes + updatedNode.id
 
-        computeTurningPoint(tempGrid, updatedNode.id)
+//        computeTurningPoint(tempGrid, updatedNode.id)
 
         val node = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
         val neighborNodes = tempGrid.find(node)
@@ -489,14 +446,14 @@ object HelloWorld {
 
             visitedNodes = visitedNodes + n.id
             println("    visit " + n.id)
-          } else if (updatedNodes.contains(n.id)) {
-            println("    COMPUTE SKYLINE " + n.id)
           }
         })
       }
     }
 
     updateGrid(grid, tempGrid)
+
+//    computeTurningPoint(graph)
   }
 
   def updateGrid(grid: GridIndex, graph: Graph[NodeGrid, WLkUnDiEdge]): GridIndex = {
@@ -578,12 +535,12 @@ object HelloWorld {
       EdgeGrid(9, 7, 8, None, None, Set())
     )
 
-    val streams: Set[UncertainStream] = Set(
+    val streams: List[UncertainStream] = List(
       UncertainObject(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3)), Box(4, 5, 7, 7), isPossible = true),
       UncertainObject(2, 2, 0.5, Set(UTuple(6, 8, .6), UTuple(4, 4, .1), UTuple(7, 6, .3)), Box(4, 4, 7, 8), isPossible = true),
-      StreamDelete(1)
-//      UncertainObject(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4)), Box(5, 6, 6, 6), isPossible = true),
-//      UncertainObject(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5)), Box(1, 2, 3, 4), isPossible = true)
+      StreamDelete(1),
+      UncertainObject(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4)), Box(5, 6, 6, 6), isPossible = true),
+      UncertainObject(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5)), Box(1, 2, 3, 4), isPossible = true)
     )
 
     var grid = new GridIndex()
@@ -595,7 +552,6 @@ object HelloWorld {
 
     streams.foldLeft(streams) {(acc, stream) => {
       grid = myAlgo(grid, stream)
-      grid
       acc
     }}
   }

@@ -289,7 +289,7 @@ object HelloWorld {
 
     val updatedOverlappedObjects = pdrOverlappedObjects.map {
       case q@NodeObject(_, _, false, _) => q
-      case q@NodeObject(obj_, _, isImpossible, distance) =>
+      case NodeObject(obj_, _, isImpossible, distance) =>
         val skyPr = SkyPrX(treeORemoved, obj.id)
         NodeObject(obj_, skyPr, isImpossible, distance)
     }
@@ -324,7 +324,7 @@ object HelloWorld {
 
     val updatedOverlappedObjects = pdrOverlappedObjects.map {
       case q@NodeObject(_, _, false, _) => q
-      case q@NodeObject(obj_, _, isImpossible, distance) =>
+      case NodeObject(obj_, _, isImpossible, distance) =>
         val skyPr = SkyPrX(treeORemoved, obj.id)
         NodeObject(obj_, skyPr, isImpossible, distance)
     }
@@ -347,7 +347,6 @@ object HelloWorld {
   def computeTurningPoint(graph: Graph[NodeGrid, WLkUnDiEdge]): Unit = {
     graph.edges.foreach(e => {
       val nodeSId = e.label.asInstanceOf[EdgeGrid].nodei
-      val nodeEId = e.label.asInstanceOf[EdgeGrid].nodej
 
       val List(nodeS, nodeE) = if (e._1.toOuter.id == nodeSId) {
         List(e._1.toOuter, e._2.toOuter)

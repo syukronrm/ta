@@ -161,9 +161,9 @@ object HelloWorld {
   }
 
   def updateNode(graph: Graph[NodeGrid, WLkUnDiEdge], node: NodeGrid): Graph[NodeGrid, WLkUnDiEdge] = {
-    def deletedNode = graph.nodes.filter(_.toOuter.id == node.id).head
+    val deletedNode = graph.nodes.filter(_.toOuter.id == node.id).head
 
-    def newEdges = graph.get(deletedNode).edges.map(e => {
+    val newEdges = graph.get(deletedNode).edges.map(e => {
       val nodeNeighbor = e.nodes.filterNot(n => n == deletedNode).head.toOuter
       val edgeWeight = e.weight
       val edgeLabel = e.label
@@ -361,8 +361,14 @@ object HelloWorld {
   }
 
   def deleteFromNode(node: NodeGrid, id: Int): NodeGrid = {
-    val obj = node.objects
+    val objMaybe = node.objects
       .find(_.obj.id == id)
+
+    if (objMaybe.isEmpty) {
+      return node
+    }
+
+    val obj = objMaybe
       .get
       .obj
 
@@ -394,10 +400,24 @@ object HelloWorld {
     val gridLoc: GridLocation = grid.getGridLocation(node)
     val EdgesNodes(edges, nodes) = grid.getGridEdges(grid, gridLoc)
 
-    addEdges(g, nodes, edges)
+    val a = addEdges(g, nodes, edges)
+    a
+  }
+
+  // TODO: COMPUTE TURNING POINT
+  def computeTurningPoint(graph: Graph[NodeGrid, WLkUnDiEdge], nodeId: Int): Unit = {
+    val node = graph.nodes.toOuter.find(_.id == nodeId).get
+    val nodeT = graph.get(node)
+
+    val edges = nodeT.edges.map(_.label.asInstanceOf[EdgeGrid])
+
+
   }
 
   def myAlgo(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
+    println("INITIAL NODES:")
+    println(prettyPrint(grid.nodes))
+
     var Q: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
     var tempGrid: Graph[NodeGrid, WLkUnDiEdge] = Graph()
 
@@ -407,9 +427,15 @@ object HelloWorld {
     val obj = uncertainData match {
       case uncertainData: UncertainObject =>
         val objInsert = uncertainData.asInstanceOf[UncertainObject]
+
+        grid.addObjectToEdge(objInsert)
+        grid.addObject(objInsert)
+
         println("INSERT object " + objInsert.id + " edge " + objInsert.edgeId + " pos " + objInsert.pos)
+
         uncertainData.asInstanceOf[UncertainObject]
       case StreamDelete(objectId) =>
+        println("DELETE objectId " + objectId)
         grid.getObject(objectId).get
     }
 
@@ -432,16 +458,19 @@ object HelloWorld {
         var updatedNode = uncertainData match {
           case uncertainData: UncertainObject =>
             val currentNode = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
+            println("  insert to node " + currentNode.id + " objId " + uncertainData.asInstanceOf[UncertainObject].id)
             insertToNode(currentNode, uncertainData.asInstanceOf[UncertainObject])
           case StreamDelete(objectId) =>
             val currentNode = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
+            println("  delete from node " + currentNode.id + " objId " + objectId)
             deleteFromNode(currentNode, objectId)
         }
 
         tempGrid = updateNode(tempGrid, updatedNode)
+        grid.updateNode(updatedNode)
         updatedNodes = updatedNodes + updatedNode.id
 
-//      TODO: PINDAH SINI SKYLINE COMPUTE
+        computeTurningPoint(tempGrid, updatedNode.id)
 
         val node = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
         val neighborNodes = tempGrid.find(node)
@@ -472,6 +501,9 @@ object HelloWorld {
 
   def updateGrid(grid: GridIndex, graph: Graph[NodeGrid, WLkUnDiEdge]): GridIndex = {
     grid.updateNodes(graph.nodes.toOuter)
+
+    println("UPDATED NODES:")
+    println(prettyPrint(grid.nodes))
 
     grid
   }
@@ -548,8 +580,8 @@ object HelloWorld {
 
     val streams: Set[UncertainStream] = Set(
       UncertainObject(1, 1, 0.5, Set(UTuple(5, 7, .6), UTuple(4, 5, .1), UTuple(7, 6, .3)), Box(4, 5, 7, 7), isPossible = true),
-//      UncertainObject(2, 2, 0.5, Set(UTuple(6, 8, .6), UTuple(4, 4, .1), UTuple(7, 6, .3)), Box(4, 4, 7, 8), isPossible = true),
-//      StreamDelete(1)
+      UncertainObject(2, 2, 0.5, Set(UTuple(6, 8, .6), UTuple(4, 4, .1), UTuple(7, 6, .3)), Box(4, 4, 7, 8), isPossible = true),
+      StreamDelete(1)
 //      UncertainObject(3, 2, 0.6, Set(UTuple(5, 6, .4), UTuple(5, 6, .2), UTuple(6, 6, .4)), Box(5, 6, 6, 6), isPossible = true),
 //      UncertainObject(4, 3, 0.5, Set(UTuple(1, 3, .2), UTuple(3, 2, .3), UTuple(1, 4, .5)), Box(1, 2, 3, 4), isPossible = true)
     )
@@ -562,7 +594,8 @@ object HelloWorld {
     grid.calculateEdgesLengthAndGrid()
 
     streams.foldLeft(streams) {(acc, stream) => {
-      myAlgo(grid, stream)
+      grid = myAlgo(grid, stream)
+      grid
       acc
     }}
   }

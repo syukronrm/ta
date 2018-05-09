@@ -23,8 +23,14 @@ class GridIndex() {
     this.uncertainDatas = this.uncertainDatas + obj
 
   def addObjectToEdge(obj: UncertainObject): Unit = {
-    val e = this.edges.find(_.id == obj.edgeId).get
-    this.edges = this.edges - e + EdgeGrid(e.id, e.nodei, e.nodej, e.length, e.g, e.objects + obj)
+    val e = this.edges.find(_.id == obj.id).get
+    val newEdge = EdgeGrid(e.id, e.nodei, e.nodej, e.length, e.g, e.objects + obj)
+
+    this.edges = this.edges - e + newEdge
+  }
+
+  def getEdgesFromNodeId(nodeId: Int): Set[EdgeGrid] = {
+    this.edges.filter(e => e.nodei == nodeId | e.nodej == nodeId)
   }
 
   def removeObjectFromEdge(objectId: Int): Unit = {

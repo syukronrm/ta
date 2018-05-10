@@ -78,8 +78,6 @@ object TurningPoint {
       }
     }
 
-    val SPs = spNodeS ++ spNodeE
-
     val SP = filterSPs(spNodeS, spNodeE, edge.id)
 
     val Q = mutable.Queue()

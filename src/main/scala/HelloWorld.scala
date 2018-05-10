@@ -215,6 +215,18 @@ object HelloWorld {
     objects
   }
 
+  def getDominationProbability(tree: RTree[EntryTuple], ddrOBox: Box, objectId: Int): Double = {
+    tree.search(ddrOBox)
+      .map(a => {
+        a
+      })
+      .filter(_.value.n == objectId)
+      .map(a => {
+        a
+      })
+      .foldLeft(0.0)((acc, e) => acc + e.value.prob)
+  }
+
   def insertToNode(node: NodeGrid, obj: UncertainObject, distance: Double): NodeGrid = {
 //    println("INSERT TO NODE, objectId " + obj.id + " distance " + distance)
     val incomingEntries = obj.tuples.map(t =>
@@ -235,16 +247,7 @@ object HelloWorld {
       } else {
         val bbox = expandDdr(obj.bbox)
 
-        val objProb = node.tree
-          .search(bbox)
-          .map(a => {
-            a
-          })
-          .filter(_.value.n == q.obj.id)
-          .map(a => {
-            a
-          })
-          .foldLeft(0.0)((acc, e) => acc + e.value.prob)
+        val objProb = getDominationProbability(node.tree, bbox, q.obj.id)
 
         if (objProb > (1 - P_THRESHOLD)) {
           NodeObject(q.obj, q.skyProb, isImpossible = true, q.distance)

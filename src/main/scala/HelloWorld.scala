@@ -10,6 +10,8 @@ import scalax.collection.edge.WUnDiEdge
 
 import scala.collection.mutable
 
+import TurningPoint._
+
 object Constants {
   // $COVERAGE-OFF$
   @inline final val D_EPSILON = 10
@@ -74,7 +76,7 @@ object HelloWorld {
     * @param depth - Initial depth to pretty print indents.
     * @return
     */
-  private def prettyPrint(a: Any, indentSize: Int = 2, maxElementWidth: Int = 30, depth: Int = 0): String = {
+  def prettyPrint(a: Any, indentSize: Int = 2, maxElementWidth: Int = 30, depth: Int = 0): String = {
     val indent = " " * depth * indentSize
     val fieldIndent = indent + (" " * indentSize)
     val thisDepth = prettyPrint(_: Any, indentSize, maxElementWidth, depth)
@@ -214,6 +216,7 @@ object HelloWorld {
   }
 
   def insertToNode(node: NodeGrid, obj: UncertainObject, distance: Double): NodeGrid = {
+//    println("INSERT TO NODE, objectId " + obj.id + " distance " + distance)
     val incomingEntries = obj.tuples.map(t =>
       Entry(
         Point(t.x.toFloat, t.y.toFloat),
@@ -228,7 +231,7 @@ object HelloWorld {
       val ddrObj = expandDdr(obj.bbox)
       val bboxQ = q.obj.bbox
       if (ddrObj.contains(bboxQ)) {
-        NodeObject(q.obj, q.skyProb, isImpossible = true, distance)
+        NodeObject(q.obj, q.skyProb, isImpossible = true, q.distance)
       } else {
         val bbox = expandDdr(obj.bbox)
 
@@ -244,10 +247,10 @@ object HelloWorld {
           .foldLeft(0.0)((acc, e) => acc + e.value.prob)
 
         if (objProb > (1 - P_THRESHOLD)) {
-          NodeObject(q.obj, q.skyProb, isImpossible = true, distance)
+          NodeObject(q.obj, q.skyProb, isImpossible = true, q.distance)
         } else {
           val skyProb = SkyPrX(node.tree.insertAll(incomingEntries), q.obj.id)
-          NodeObject(q.obj, skyProb, q.isImpossible, distance)
+          NodeObject(q.obj, skyProb, q.isImpossible, q.distance)
         }
       }
     })
@@ -267,36 +270,6 @@ object HelloWorld {
     val skyProbU = SkyPrX(tree, obj.id)
     val finalObjects = updatedObjects + NodeObject(obj, skyProbU, isImpossible = false, distance)
     NodeGrid(node.id, node.x, node.y, tree, finalObjects)
-  }
-
-
-  def deleteFromNode(id: Int, node: NodeGrid): NodeGrid = {
-    val obj = node.objects
-      .find(_.obj.id == id)
-      .get
-      .obj
-
-    val deletingEntries = obj.tuples.map(t =>
-      Entry(
-        Point(t.x.toFloat, t.y.toFloat),
-        EntryTuple(obj.id, t.p)
-      )
-    )
-
-    val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
-
-    val treeORemoved = node.tree.removeAll(deletingEntries)
-
-    val updatedOverlappedObjects = pdrOverlappedObjects.map {
-      case q@NodeObject(_, _, false, _) => q
-      case NodeObject(obj_, _, isImpossible, distance) =>
-        val skyPr = SkyPrX(treeORemoved, obj.id)
-        NodeObject(obj_, skyPr, isImpossible, distance)
-    }
-
-    val objectsORemoved = updatedOverlappedObjects.filterNot(_.obj.id == id)
-
-    NodeGrid(node.id, node.x, node.y, treeORemoved, objectsORemoved)
   }
 
   def deleteFromNode(node: NodeGrid, id: Int): NodeGrid = {
@@ -354,21 +327,16 @@ object HelloWorld {
         List(e._2.toOuter, e._1.toOuter)
       }
 
-      computeTurningPoint(nodeS, e.label.asInstanceOf[EdgeGrid], nodeE)
+      val edge = e.label.asInstanceOf[EdgeGrid]
+
+      println("\n")
+      println("==========")
+      println("Process Turning Point edge " + edge.id + " " + nodeS.id + "~" + nodeE.id + " " + edge.length.get)
+      processTurningPoint(nodeS, edge, nodeE)
     })
   }
 
-  def computeTurningPoint(nodeS: NodeGrid, edge: EdgeGrid, nodeE: NodeGrid): Unit = {
-    val spNodeS = nodeS.objects
-    val spNodeE = nodeE.objects
-    val spEdge = edge.objects
-
-
-  }
-
   def myAlgo(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
-    println("INITIAL NODES:")
-    println(prettyPrint(grid.nodes))
 
     val Q: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
     var tempGrid: Graph[NodeGrid, WLkUnDiEdge] = Graph()
@@ -407,15 +375,16 @@ object HelloWorld {
     while (Q.nonEmpty) {
       val currentNodeId = Q.dequeue()
       println("dequeue " + currentNodeId)
-
       val distance = calculateDistance(tempGrid, obj, currentNodeId)
+
       println("  distance to obj " + distance)
       if (distance < D_EPSILON) {
         val updatedNode = uncertainData match {
-          case uncertainData: UncertainObject =>
+          case UncertainObject(_, _, _, _, _, _) =>
             val currentNode = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
-            println("  insert to node " + currentNode.id + " objId " + uncertainData.asInstanceOf[UncertainObject].id)
-            insertToNode(currentNode, uncertainData.asInstanceOf[UncertainObject], distance)
+            val distance = calculateDistance(tempGrid, obj, currentNodeId)
+            println("  insert to node " + currentNode.id + " objId " + obj.id + " distance " + distance)
+            insertToNode(currentNode, obj, distance)
           case StreamDelete(objectId) =>
             val currentNode = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
             println("  delete from node " + currentNode.id + " objId " + objectId)
@@ -450,16 +419,12 @@ object HelloWorld {
       }
     }
 
+    computeTurningPoint(tempGrid)
     updateGrid(grid, tempGrid)
-
-//    computeTurningPoint(graph)
   }
 
   def updateGrid(grid: GridIndex, graph: Graph[NodeGrid, WLkUnDiEdge]): GridIndex = {
     grid.updateNodes(graph.nodes.toOuter)
-
-    println("UPDATED NODES:")
-    println(prettyPrint(grid.nodes))
 
     grid
   }
@@ -526,12 +491,12 @@ object HelloWorld {
       EdgeGrid(2, 1, 3, None, None, Set()),
       EdgeGrid(3, 2, 5, None, None, Set()),
       EdgeGrid(4, 3, 4, None, None, Set()),
-      EdgeGrid(4, 3, 6, None, None, Set()),
-      EdgeGrid(5, 4, 5, None, None, Set()),
-      EdgeGrid(6, 4, 7, None, None, Set()),
-      EdgeGrid(7, 5, 8, None, None, Set()),
-      EdgeGrid(8, 6, 7, None, None, Set()),
-      EdgeGrid(9, 7, 8, None, None, Set())
+      EdgeGrid(5, 3, 6, None, None, Set()),
+      EdgeGrid(6, 4, 5, None, None, Set()),
+      EdgeGrid(7, 4, 7, None, None, Set()),
+      EdgeGrid(8, 5, 8, None, None, Set()),
+      EdgeGrid(9, 6, 7, None, None, Set()),
+      EdgeGrid(10, 7, 8, None, None, Set())
     )
 
     val streams: List[UncertainStream] = List(

@@ -358,6 +358,8 @@ object HelloWorld {
 
         uncertainData.asInstanceOf[UncertainObject]
       case StreamDelete(objectId) =>
+        grid.removeObjectFromEdge(objectId)
+        grid.removeObject(objectId)
         println("DELETE objectId " + objectId)
         grid.getObject(objectId).get
     }

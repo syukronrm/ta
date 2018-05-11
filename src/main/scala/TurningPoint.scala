@@ -38,7 +38,7 @@ object TurningPoint {
   def processTurningPoint(nodeS: NodeGrid, edge: EdgeGrid, nodeE: NodeGrid): Unit = {
     val spNodeS = nodeS.objects
     val spNodeE = nodeE.objects
-    val spEdge = edge.objects
+    val uncertainDataSpEdge = edge.objects
 
     val findSimilar = (objects: Set[NodeObject], obj: NodeObject) =>
       objects.find(o => o.obj.id == obj.obj.id & o != obj)
@@ -51,10 +51,22 @@ object TurningPoint {
       }
     }
 
-    val filterSPs = (spNodeS: Set[NodeObject], spNodeE: Set[NodeObject], edgeId: Int) => {
-      val SPs = spNodeS ++ spNodeE
+    def convertToNodeObject (objects: Set[UncertainObject]): Set[NodeObject] =
+      objects.map(o => NodeObject(o, 100, isImpossible = false, 0))
 
-      SPs.filter(o => {
+
+    def filterSPs(spNodeS: Set[NodeObject], spNodeE: Set[NodeObject], uncertainDataSpEdge: Set[UncertainObject], edgeId: Int) = {
+      var SPs = spNodeS ++ spNodeE
+
+      val objIdsOnEdge = uncertainDataSpEdge.map(_.id)
+
+      SPs = SPs.filterNot(o => {
+        objIdsOnEdge.contains(o.obj.id)
+      })
+
+      val spEdge = convertToNodeObject(uncertainDataSpEdge)
+
+      SPs = SPs.filter(o => {
         findSimilar(SPs, o) match {
           case None =>
             true
@@ -63,6 +75,9 @@ object TurningPoint {
             determineObject(o, obj, edgeId)
         }
       })
+
+      SPs = SPs ++ spEdge
+      SPs
     }
 
     val findDistance = (obj: NodeObject, edge: EdgeGrid, nodeSId: Int, nodeEId: Int) => {
@@ -78,7 +93,7 @@ object TurningPoint {
       }
     }
 
-    val SP = filterSPs(spNodeS, spNodeE, edge.id)
+    val SP = filterSPs(spNodeS, spNodeE, uncertainDataSpEdge, edge.id)
 
     val Q = mutable.Queue()
 

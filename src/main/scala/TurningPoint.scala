@@ -106,12 +106,13 @@ object TurningPoint {
     }
 
     val SP = filterSPs(spNodeS, spNodeE, uncertainDataSpEdge, edge)
+    println("GSP " + SP.map(_.obj.id).toString())
     val Q = mutable.Queue[Landmark]()
 
     SP.foreach(objL => {
       println("  Object " + objL.obj.id)
 
-      val distance = findDistance(objL, edge, spNodeS)
+      val distance = findDistance(objL, edge, spNodeS, spNodeE)
       println("    distance from node S " + distance)
 
       val landmarkLeft = createLandmarkLeft(distance, edge, objL)
@@ -121,9 +122,10 @@ object TurningPoint {
 
       val sp = SP - objL
       val LMidObjects = determineLMidObjects(sp, objL)
+      println(LMidObjects)
 
       LMidObjects.foreach(objLMid => {
-        val landmarkMaybe = determineLMid(objL, objLMid, edge, landmarkLeft, landmarkRight, spNodeS)
+        val landmarkMaybe = determineLMid(objL, objLMid, edge, landmarkLeft, landmarkRight, spNodeS, spNodeE)
 
         if (landmarkMaybe.isDefined) {
           Q.enqueue(landmarkMaybe.get)
@@ -163,23 +165,41 @@ object TurningPoint {
     new LandmarkRight(loc, edgeIdMaybe, objL)
   }
 
-  def findDistance(obj: NodeObject, edge: EdgeGrid, spNodeS: Set[NodeObject]): Double = {
-    val ids = spNodeS.map(_.obj.id)
+  def findDistance(obj: NodeObject, edge: EdgeGrid, spNodeS: Set[NodeObject], spNodeE: Set[NodeObject]): Double = {
     if (obj.obj.edgeId == edge.id) {
       println("    DEBUG distance obj " + obj.obj.id + " : in edge " + edge.id + " len edge " + edge.length.get + " position " + obj.obj.pos)
       edge.length.get * obj.obj.pos
-    } else if (ids.contains(obj.obj.id)) {
-      println("    DEBUG distance obj " + obj.obj.id + " from node s " + obj.distance)
-      obj.distance * -1
     } else {
-      println("    DEBUG distance obj " + obj.obj.id + " from node e " + obj.distance)
-      obj.distance + edge.length.get
+      val objIdsNodeS = spNodeS.map(_.obj.id)
+      val objIdsNodeE = spNodeE.map(_.obj.id)
+
+      val isObjInNodeS = objIdsNodeS.contains(obj.obj.id)
+      val isObjInNodeE = objIdsNodeE.contains(obj.obj.id)
+
+      if (isObjInNodeS & isObjInNodeE) {
+        val distanceFromNodeS = spNodeS.find(_.obj.id == obj.obj.id).get.distance
+        val distanceFromNodeE = spNodeE.find(_.obj.id == obj.obj.id).get.distance
+
+        if (distanceFromNodeS < distanceFromNodeE) {
+          println("    DEBUG distance obj " + obj.obj.id + " from node s " + obj.distance)
+          obj.distance * -1
+        } else {
+          println("    DEBUG distance obj " + obj.obj.id + " from node e " + obj.distance)
+          obj.distance + edge.length.get
+        }
+      } else if (isObjInNodeS) {
+        println("    DEBUG distance obj " + obj.obj.id + " from node s " + obj.distance)
+        obj.distance * -1
+      } else {
+        println("    DEBUG distance obj " + obj.obj.id + " from node e " + obj.distance)
+        obj.distance + edge.length.get
+      }
     }
   }
 
-  def determineLMid(objL: NodeObject, objLMid: NodeObject, edge: EdgeGrid, ll: LandmarkLeft, lr: LandmarkRight, spNodeS: Set[NodeObject]): Option[Landmark] = {
-    val objLdistance = findDistance(objL, edge, spNodeS)
-    val objLMiddistance = findDistance(objLMid, edge, spNodeS)
+  def determineLMid(objL: NodeObject, objLMid: NodeObject, edge: EdgeGrid, ll: LandmarkLeft, lr: LandmarkRight, spNodeS: Set[NodeObject], spNodeE: Set[NodeObject]): Option[Landmark] = {
+    val objLdistance = findDistance(objL, edge, spNodeS, spNodeE)
+    val objLMiddistance = findDistance(objLMid, edge, spNodeS, spNodeE)
 
     val distanceBetween = (objLdistance + objLMiddistance) / 2
     println("      distance between obj1 " + objL.obj.id + " obj2 " + objLMid.obj.id + " is " + distanceBetween)
@@ -188,7 +208,7 @@ object TurningPoint {
       if (objLdistance > objLMiddistance) {
         println("      obj1 " + objL.obj.id + " distance " + objLdistance)
         println("      obj2 " + objLMid.obj.id + " distance " + objLMiddistance)
-        val landmark = new LandmarkRightMid(distanceBetween, Some(edge.id), objL, objLMid)
+        val landmark = new LandmarkLeftMid(distanceBetween, Some(edge.id), objL, objLMid)
         Some(landmark)
       } else {
         println("      obj1 " + objLdistance)

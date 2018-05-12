@@ -20,6 +20,11 @@ class LandmarkLeft(_distance: Double, _edgeId: Option[Int], _obj: NodeObject) ex
   override val distance: Double = _distance
   override val edgeId: Option[Int] = _edgeId
   override val obj: NodeObject = _obj
+
+  override def toString: String = {
+    val edge = if (edgeId.isDefined) edgeId.get.toString else "None"
+    "LandmarkLeft in edgeId " + edge + " between objId " + obj.obj.id + " in location " + distance
+  }
 }
 
 class LandmarkLeftMid(_distance: Double, _edgeId: Option[Int], _obj: NodeObject, _objDominated: NodeObject) extends Landmark {
@@ -38,6 +43,11 @@ class LandmarkRight(_distance: Double, _edgeId: Option[Int], _obj: NodeObject) e
   override val distance: Double = _distance
   override val edgeId: Option[Int] = _edgeId
   override val obj: NodeObject = _obj
+
+  override def toString: String = {
+    val edge = if (edgeId.isDefined) edgeId.get.toString else "None"
+    "LandmarkRight in edgeId " + edge + " between objId " + obj.obj.id + " in location " + distance
+  }
 }
 
 class LandmarkRightMid(_distance: Double, _edgeId: Option[Int], _obj: NodeObject, _objDominated: NodeObject) extends Landmark {
@@ -76,7 +86,6 @@ object TurningPoint {
         NodeObject(o, 100, isImpossible = false, distance)
       })
     }
-
 
     def filterSPs(spNodeS: Set[NodeObject], spNodeE: Set[NodeObject], uncertainDataSpEdge: Set[UncertainObject], edge: EdgeGrid) = {
       var SPs = spNodeS ++ spNodeE
@@ -117,6 +126,10 @@ object TurningPoint {
 
       val landmarkLeft = createLandmarkLeft(distance, edge, objL)
       val landmarkRight = createLandmarkRight(distance, edge, objL)
+
+      Q.enqueue(landmarkLeft)
+      Q.enqueue(landmarkRight)
+
       println("    Landmark Left  : " + landmarkLeft.toString)
       println("    Landmark Right : " + landmarkRight.toString)
 
@@ -219,49 +232,6 @@ object TurningPoint {
     } else {
       None
     }
-
-////    val objLdistance = findDistance(objL, edge, spNodeS)
-//    val objLMiddistance = findDistance(objLMid, edge, spNodeS)
-//    val ll2 = createLandmarkLeft(objLMiddistance, edge, objLMid)
-//    val lr2 = createLandmarkRight(objLMiddistance, edge, objLMid)
-//
-//    println("      Landmark 1: " + ll + " || " + lr)
-//    println("      Landmark 2: " + ll2 + " || " + lr2)
-//
-//    if (ll.distance < lr2.distance) {
-//        val distance = (ll.distance + lr2.distance) / 2
-//        if (distance >= 0 & distance < edge.length.get) {
-//          val landmark = new LandmarkLeftMid(distance, Some(edge.id), objL, objLMid)
-//          println("      Landmark " + landmark)
-//          return Some(landmark)
-//        }
-//    } else if (lr.distance > ll2.distance) {
-//        val distance = (lr.distance + ll2.distance) / 2
-//        if (distance >= 0 & distance < edge.length.get) {
-//          val landmark = new LandmarkRightMid(distance, Some(edge.id), objL, objLMid)
-//          println("      Landmark " + landmark)
-//          return Some(landmark)
-//        }
-//    }
-//
-//    println("      NONE")
-//    None
-//
-//    val distance = (objLMiddistance + objLdistance) / 2
-//    println("      objL "+ objL.obj.id +" dist " + objLdistance)
-//    println("      objLMid " + objLMid.obj.id + " dist " + objLMiddistance)
-//    println("      obj "+ objL.obj.id +" obj "+ objLMid.obj.id +" distance " + distance + " length " + edge.length.get)
-//
-//    if (distance >= 0 & distance <= edge.length.get) {
-//      val edgeId = edge.id
-//      if (distance < objLdistance) {
-//        Some(new LandmarkLeftMid(distance, Some(edgeId), objL, objLMid))
-//      } else {
-//        Some(new LandmarkRightMid(distance, Some(edgeId), objL, objLMid))
-//      }
-//    } else {
-//      None
-//    }
   }
 
   def determineLMidObjects(sp: Set[NodeObject], objL: NodeObject): Set[NodeObject] = {

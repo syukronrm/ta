@@ -227,16 +227,18 @@ object HelloWorld {
       .foldLeft(0.0)((acc, e) => acc + e.value.prob)
   }
 
-  def insertToNode(node: NodeGrid, obj: UncertainObject, distance: Double): NodeGrid = {
-//    println("INSERT TO NODE, objectId " + obj.id + " distance " + distance)
-    val incomingEntries = obj.tuples.map(t =>
+  def createEntryTuples(obj: UncertainObject): Set[Entry[EntryTuple]] = {
+    obj.tuples.map(t =>
       Entry(
         Point(t.x.toFloat, t.y.toFloat),
         EntryTuple(obj.id, t.p)
       )
     )
+  }
 
-    // FIND OBJECT OVERLAPPED PDR
+  def insertToNode(node: NodeGrid, obj: UncertainObject, distance: Double): NodeGrid = {
+    val incomingEntries = createEntryTuples(obj)
+
     val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
 
     val updatedOverlappedObjects = pdrOverlappedObjects.map(q => {
@@ -347,10 +349,15 @@ object HelloWorld {
     var updatedNodes: Set[Int] = Set()
     var visitedNodes: Set[Int] = Set()
 
+    println("==============================MOM===============================")
+    println("==============================WOW===============================")
+
+
     val obj = uncertainData match {
       case uncertainData: UncertainObject =>
         val objInsert = uncertainData.asInstanceOf[UncertainObject]
 
+        println(objInsert)
         grid.addObjectToEdge(objInsert)
         grid.addObject(objInsert)
 
@@ -358,10 +365,13 @@ object HelloWorld {
 
         uncertainData.asInstanceOf[UncertainObject]
       case StreamDelete(objectId) =>
+        val obj = grid.getObject(objectId).get
+
+        println("DELETE objectId " + objectId)
         grid.removeObjectFromEdge(objectId)
         grid.removeObject(objectId)
-        println("DELETE objectId " + objectId)
-        grid.getObject(objectId).get
+
+        obj
     }
 
     val edge: EdgeGrid = grid.findEdgeById(obj.edgeId).get

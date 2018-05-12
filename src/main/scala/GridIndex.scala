@@ -23,7 +23,7 @@ class GridIndex() {
     this.uncertainDatas = this.uncertainDatas + obj
 
   def addObjectToEdge(obj: UncertainObject): Unit = {
-    val e = this.edges.find(_.id == obj.id).get
+    val e = this.edges.find(_.id == obj.edgeId).get
     val newEdge = EdgeGrid(e.id, e.nodei, e.nodej, e.length, e.g, e.objects + obj)
 
     this.edges = this.edges - e + newEdge

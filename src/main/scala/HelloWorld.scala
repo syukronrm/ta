@@ -337,7 +337,7 @@ object HelloWorld {
       println("\n")
       println("==========")
       println("Process Turning Point edge " + edge.id + " " + nodeS.id + "~" + nodeE.id + " " + edge.length.get)
-      processTurningPoint(nodeS, edge, nodeE)
+      processLandmark(nodeS, edge, nodeE)
     })
   }
 

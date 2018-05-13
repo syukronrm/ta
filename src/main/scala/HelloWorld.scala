@@ -321,7 +321,6 @@ object HelloWorld {
     a
   }
 
-  // TODO: COMPUTE TURNING POINT
   def computeTurningPoint(graph: Graph[NodeGrid, WLkUnDiEdge]): Unit = {
     graph.edges.foreach(e => {
       val nodeSId = e.label.asInstanceOf[EdgeGrid].nodei

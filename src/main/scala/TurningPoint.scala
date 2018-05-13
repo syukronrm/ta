@@ -4,8 +4,6 @@ import HelloWorld._
 import HelloBox._
 import Constants._
 
-import scala.collection.mutable.ListBuffer
-
 trait Landmark {
   val distance: Double // Distance to Node S
   val edgeId: Option[Int]
@@ -74,14 +72,6 @@ object TurningPoint {
     val findSimilar = (objects: Set[NodeObject], obj: NodeObject) =>
       objects.find(o => o.obj.id == obj.obj.id & o != obj)
 
-    val determineObject = (obj1: NodeObject, obj2: NodeObject, edgeId: Int) => {
-      if (obj1.obj.edgeId == edgeId) {
-        spNodeS.contains(obj1)
-      } else {
-        obj1.distance < obj2.distance
-      }
-    }
-
     def convertToNodeObject (objects: Set[UncertainObject], edgeLength: Double): Set[NodeObject] = {
       objects.map(o => {
         val distance = edgeLength * o.pos
@@ -124,10 +114,6 @@ object TurningPoint {
     val SP = filterSPs(spNodeS, spNodeE, uncertainDataSpEdge, edge)
     println("GSP " + SP.map(_.obj.id).toString())
     val Q = mutable.Queue[Landmark]()
-
-    val groupedSP = SP.groupBy(_.obj.id)
-
-    val doubleObjIds = mutable.Stack[Int]()
 
     def findLandmarkMid(sp: Set[NodeObject], objL: NodeObject, edge: EdgeGrid,
                         ll: LandmarkLeft, lr: LandmarkRight,
@@ -295,31 +281,6 @@ object TurningPoint {
         println("    DEBUG distance obj " + obj.obj.id + " from node e " + obj.distance)
         obj.distance + edge.length.get
       }
-
-//      val objIdsNodeS = spNodeS.map(_.obj.id)
-//      val objIdsNodeE = spNodeE.map(_.obj.id)
-//
-//      val isObjInNodeS = objIdsNodeS.contains(obj.obj.id)
-//      val isObjInNodeE = objIdsNodeE.contains(obj.obj.id)
-//
-//      if (isObjInNodeS & isObjInNodeE) {
-//        val distanceFromNodeS = spNodeS.find(_.obj.id == obj.obj.id).get.distance
-//        val distanceFromNodeE = spNodeE.find(_.obj.id == obj.obj.id).get.distance
-//
-//        if (distanceFromNodeS < distanceFromNodeE) {
-//          println("    DEBUG distance obj " + obj.obj.id + " from node s " + obj.distance)
-//          obj.distance * -1
-//        } else {
-//          println("    DEBUG distance obj " + obj.obj.id + " from node e " + obj.distance)
-//          obj.distance + edge.length.get
-//        }
-//      } else if (isObjInNodeS) {
-//        println("    DEBUG distance obj " + obj.obj.id + " from node s " + obj.distance)
-//        obj.distance * -1
-//      } else {
-//        println("    DEBUG distance obj " + obj.obj.id + " from node e " + obj.distance)
-//        obj.distance + edge.length.get
-//      }
     }
   }
 
@@ -369,7 +330,6 @@ object TurningPoint {
 
   def findInitialSPIds(sortedLandmarks: Seq[Landmark]): Seq[Int] = {
     val initialSP = mutable.Stack[Int]()
-    val tempLandmarkLeftId = mutable.Stack[Int]()
 
     sortedLandmarks.foreach(l => {
       if (l.distance <= 0) {
@@ -397,7 +357,7 @@ object TurningPoint {
     val queue = scala.collection.mutable.Queue[Landmark](filteredLandmarks: _*)
 
     var dStart: Double = 0
-    var dEnd: Double = edge.length.get
+    val dEnd: Double = edge.length.get
 
     var turningPointList = Vector[TP]()
 

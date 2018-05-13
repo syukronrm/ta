@@ -342,7 +342,6 @@ object HelloWorld {
   }
 
   def myAlgo(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
-
     val Q: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
     var tempGrid: Graph[NodeGrid, WLkUnDiEdge] = Graph()
 
@@ -357,7 +356,6 @@ object HelloWorld {
       case uncertainData: UncertainObject =>
         val objInsert = uncertainData.asInstanceOf[UncertainObject]
 
-        println(objInsert)
         grid.addObjectToEdge(objInsert)
         grid.addObject(objInsert)
 
@@ -511,7 +509,8 @@ object HelloWorld {
       EdgeGrid(7, 4, 7, None, None, Set()),
       EdgeGrid(8, 5, 8, None, None, Set()),
       EdgeGrid(9, 6, 7, None, None, Set()),
-      EdgeGrid(10, 7, 8, None, None, Set())
+      EdgeGrid(10, 7, 8, None, None, Set()),
+      EdgeGrid(11, 4, 6, None, None, Set())
     )
 
     val streams: List[UncertainStream] = List(

@@ -125,50 +125,7 @@ object TurningPoint {
     println("GSP " + SP.map(_.obj.id).toString())
     val Q = mutable.Queue[Landmark]()
 
-    /*
-      GROUP EVERY OBJECT BY ID
-      FIND EACH LANDMARK LEFT AND RIGHT
-      MERGE LANDMARK IF THERE'S INTERSECTION
-     */
     val groupedSP = SP.groupBy(_.obj.id)
-
-    /*
-      GROUP AND FIND LANDMARK LEFT AND RIGHT
-     */
-//    groupedSP.foreach(objMap => {
-//      val objId = objMap._1
-//      val objects = objMap._2
-//
-//      val obj1 = objects.head
-//      val obj1Distance = findDistance(obj1, edge, spNodeS, spNodeE)
-//      val llObj1 = createLandmarkLeft(obj1Distance, edge, objId)
-//      val lrObj1 = createLandmarkRight(obj1Distance, edge, objId)
-//
-//      val obj2 = (objects - objects.head).head
-//      val obj2Distance = findDistance(obj2, edge, spNodeS, spNodeE)
-//      val llObj2 = createLandmarkLeft(obj2Distance, edge, objId)
-//      val lrObj2 = createLandmarkRight(obj2Distance, edge, objId)
-//
-//      if (lrObj1.distance > llObj2.distance) {
-//        val ll = createLandmarkLeft(obj1Distance, edge, objId)
-//        val lr = createLandmarkRight(obj2Distance, edge, objId)
-//
-//        Q.enqueue(ll)
-//
-//        if (lr.distance >= 0 & lr.distance <= edge.length.get) {
-//          Q.enqueue(lr)
-//        }
-//      } else if (llObj1.distance > lrObj2.distance) {
-//        val ll = createLandmarkLeft(obj2Distance, edge, objId)
-//        val lr = createLandmarkLeft(obj1Distance, edge, objId)
-//
-//        Q.enqueue(ll)
-//
-//        if (lr.distance >= 0 & lr.distance <= edge.length.get) {
-//          Q.enqueue(lr)
-//        }
-//      }
-//    })
 
     val doubleObjIds = mutable.Stack[Int]()
 

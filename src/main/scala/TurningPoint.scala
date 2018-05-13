@@ -80,32 +80,9 @@ object TurningPoint {
       })
     }
 
-    /*
-      MARKED AS LOGIC ERROR
-      filter object yang sama terdapat pada node S dan node E,
-      cari object yang terdekat
-     */
     def filterSPs(spNodeS: Set[NodeObject], spNodeE: Set[NodeObject], uncertainDataSpEdge: Set[UncertainObject], edge: EdgeGrid): Set[NodeObject] = {
       var SPs = spNodeS ++ spNodeE
       val spEdge = convertToNodeObject(uncertainDataSpEdge, edge.length.get)
-//      val edgeId = edge.id
-//
-//      val objIdsOnEdge = uncertainDataSpEdge.map(_.id)
-//      println("  objectId on edge "+ edgeId + " is " + objIdsOnEdge)
-//
-//      SPs = SPs.filterNot(o => {
-//        objIdsOnEdge.contains(o.obj.id)
-//      })
-//
-//      SPs = SPs.filter(o => {
-//        findSimilar(SPs, o) match {
-//          case None =>
-//            true
-//          case objMaybe =>
-//            val obj = objMaybe.get
-//            determineObject(o, obj, edgeId)
-//        }
-//      })
 
       SPs = SPs ++ spEdge
       SPs
@@ -434,4 +411,3 @@ object TurningPoint {
     })
   }
 }
-

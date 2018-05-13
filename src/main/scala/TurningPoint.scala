@@ -1,9 +1,10 @@
 import scala.collection.mutable
 import archery._
-
 import HelloWorld._
 import HelloBox._
 import Constants._
+
+import scala.collection.mutable.ListBuffer
 
 trait Landmark {
   val distance: Double // Distance to Node S
@@ -61,6 +62,8 @@ class LandmarkRightMid(_distance: Double, _edgeId: Option[Int], _objId: Int, _ob
     "LandmarkRightMid in edgeId " + edge + " between objId " + objId + " and objId' " + objDominatedId + " in location " + distance
   }
 }
+
+case class TP(dStart: Double, dEnd: Double, SP: Set[NodeObject])
 
 object TurningPoint {
   def processLandmark(nodeS: NodeGrid, edge: EdgeGrid, nodeE: NodeGrid): Unit = {
@@ -127,8 +130,8 @@ object TurningPoint {
       val landmarkLeft = createLandmarkLeft(distance, edge, objL.obj.id)
       val landmarkRight = createLandmarkRight(distance, edge, objL.obj.id)
 
-      if (landmarkLeft.distance >= 0 & landmarkLeft.distance <= edge.length.get)
-        Q.enqueue(landmarkLeft)
+//      if (landmarkLeft.distance >= 0 & landmarkLeft.distance <= edge.length.get)
+      Q.enqueue(landmarkLeft)
 
       if (landmarkRight.distance >= 0 & landmarkRight.distance <= edge.length.get)
         Q.enqueue(landmarkRight)
@@ -155,6 +158,8 @@ object TurningPoint {
         println("        " + l)
       })
     }
+
+    processLandmark(Q.toList, SP, edge)
   }
 
   def createLandmarkLeft(distance: Double, edge: EdgeGrid, objLId: Int): LandmarkLeft = {
@@ -254,6 +259,113 @@ object TurningPoint {
         true
       else
         false
+    })
+  }
+
+  def findInitialSPIds(sortedLandmarks: Seq[Landmark]): Seq[Int] = {
+    val initialSP = mutable.Stack[Int]()
+    val tempLandmarkLeftId = mutable.Stack[Int]()
+
+    sortedLandmarks.foreach(l => {
+      if (l.distance <= 0) {
+        val objId = l.objId
+        l match {
+          case _: LandmarkLeft =>
+            initialSP.push(objId)
+          case _ =>
+            None
+        }
+      } else {
+        return initialSP.toSeq
+      }
+    })
+
+    initialSP.toSeq
+  }
+
+  def processLandmark(landmarks: List[Landmark], objects: Set[NodeObject], edge: EdgeGrid): Unit = {
+    val sortedLandmarks = landmarks.toSeq.sortBy(_.distance)
+
+    var SP = findInitialSPIds(sortedLandmarks).map(objId => objects.find(_.obj.id == objId).get).toSet
+
+    val filteredLandmarks = sortedLandmarks.filterNot(_.distance < 0)
+    val queue = scala.collection.mutable.Queue[Landmark](filteredLandmarks: _*)
+
+    var dStart: Double = 0
+    var dEnd: Double = edge.length.get
+
+    var turningPointList = Vector[TP]()
+
+    def isObjectInSP(SP: Set[NodeObject], objId: Int): Boolean = {
+      SP.exists(_.obj.id == objId)
+    }
+
+    while (queue.nonEmpty) {
+      val l = queue.dequeue()
+
+      l match {
+        case _: LandmarkLeft =>
+          val isLandmarkRightMidExist = queue.exists {
+            case a: LandmarkRightMid =>
+              a.objDominatedId == l.objId
+            case _ =>
+              false
+          }
+
+          if (!isLandmarkRightMidExist) {
+            val obj = objects.find(_.obj.id == l.objId).get
+
+            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
+
+            dStart = l.distance
+            SP = SP + obj
+          }
+        case _: LandmarkRight =>
+          if (isObjectInSP(SP, l.objId)) {
+            val obj = SP.find(_.obj.id == l.objId).get
+
+            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
+
+            dStart = l.distance
+            SP = SP - obj
+          }
+        case landmark: LandmarkLeftMid =>
+
+          if (isObjectInSP(SP, landmark.objId)
+            & isObjectInSP(SP, landmark.objDominatedId)) {
+            val objDominated = SP.find(_.obj.id == landmark.objDominatedId).get
+
+            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
+
+            dStart = l.distance
+            SP = SP - objDominated
+          }
+        case _ =>
+          val landmark = l.asInstanceOf[LandmarkRightMid]
+
+          val isLandmarkRightMidExist = queue.exists {
+            case a: LandmarkRightMid =>
+              a.objDominatedId == landmark.objDominatedId
+            case _ =>
+              false
+          }
+
+          if (isObjectInSP(SP, l.objId) & !isLandmarkRightMidExist) {
+            val objDominated = objects.find(_.obj.id == landmark.objDominatedId).get
+
+            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
+
+            dStart = l.distance
+            SP = SP + objDominated
+          }
+      }
+    }
+
+    turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
+
+    println("      Total Turning Points:")
+    turningPointList.foreach(t => {
+      println("        Start: " + t.dStart + "\t End: " + t.dEnd + "\t SP: " + t.SP.map(_.obj.id).toString())
     })
   }
 }

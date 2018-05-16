@@ -103,10 +103,14 @@ class GridIndex() {
     val NodeGrid(_, x1, y1, _, _) = nodei.get
     val NodeGrid(_, x2, y2, _, _) = nodej.get
 
-    val length = getLength(x1, y1, x2, y2)
     val g = getGridLocation(nodei.get)
 
-    EdgeGrid(edge.id, edge.nodei, edge.nodej, Some(length), Some(g), Set())
+    if (edge.length.isEmpty) {
+      val length = getLength(x1, y1, x2, y2)
+      EdgeGrid(edge.id, edge.nodei, edge.nodej, Some(length), Some(g), Set())
+    } else {
+      EdgeGrid(edge.id, edge.nodei, edge.nodej, edge.length, Some(g), Set())
+    }
   }
 
   def getGridLocation(node: NodeGrid): GridLocation = {

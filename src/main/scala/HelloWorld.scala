@@ -14,7 +14,7 @@ import TurningPoint._
 
 object Constants {
   // $COVERAGE-OFF$
-  @inline final val D_EPSILON = 10
+  @inline final val D_EPSILON = 17
   @inline final val P_THRESHOLD = 0.5
   // $COVERAGE-ON$
 }
@@ -340,8 +340,10 @@ object HelloWorld {
     })
   }
 
+  case class NodeQueue(nodeId: Int, distance: Double)
+
   def myAlgo(grid: GridIndex, uncertainData: UncertainStream): GridIndex = {
-    val Q: scala.collection.mutable.Queue[Int] = scala.collection.mutable.Queue[Int]()
+    var Q: scala.collection.mutable.Queue[NodeQueue] = scala.collection.mutable.Queue[NodeQueue]()
     var tempGrid: Graph[NodeGrid, WLkUnDiEdge] = Graph()
 
     var updatedNodes: Set[Int] = Set()
@@ -375,19 +377,34 @@ object HelloWorld {
 
     // enqueue
     val nodei = grid.findNodeById(edge.nodei).get
-
-    Q.enqueue(nodei.id)
-    println("enqueue " + nodei.id)
-
-    visitedNodes = visitedNodes + nodei.id
-    println("visit " + nodei.id)
+    val nodej = grid.findNodeById(edge.nodej).get
 
     tempGrid = addTempGraph(tempGrid, grid, nodei.id)
+    tempGrid = addTempGraph(tempGrid, grid, nodej.id)
+
+    val distanceNodei = calculateDistance(tempGrid, obj, nodei.id)
+    val distanceNodej = calculateDistance(tempGrid, obj, nodej.id)
+
+    if (distanceNodei < distanceNodej) {
+      println("enqueue " + nodei.id)
+      Q.enqueue(NodeQueue(nodei.id, distanceNodei))
+
+      visitedNodes = visitedNodes + nodei.id
+      println("visit " + nodei.id)
+    } else {
+      println("enqueue " + nodej.id)
+      Q.enqueue(NodeQueue(nodej.id, distanceNodej))
+
+      visitedNodes = visitedNodes + nodej.id
+      println("visit " + nodej.id)
+    }
+
+
 
     while (Q.nonEmpty) {
-      val currentNodeId = Q.dequeue()
+      Q = Q.sortBy(_.distance)
+      val NodeQueue(currentNodeId, distance) = Q.dequeue()
       println("dequeue " + currentNodeId)
-      val distance = calculateDistance(tempGrid, obj, currentNodeId)
 
       println("  distance to obj " + distance)
       if (distance < D_EPSILON) {
@@ -407,8 +424,6 @@ object HelloWorld {
         grid.updateNode(updatedNode)
         updatedNodes = updatedNodes + updatedNode.id
 
-//        computeTurningPoint(tempGrid, updatedNode.id)
-
         val node = tempGrid.nodes.toOuter.find(_.id == currentNodeId).get
         val neighborNodes = tempGrid.find(node)
           .get
@@ -421,7 +436,10 @@ object HelloWorld {
           if (!visitedNodes.contains(n.id)) {
             tempGrid = addTempGraph(tempGrid, grid, n.id)
 
-            Q.enqueue(n.id)
+            val distanceUnvisitedNode = calculateDistance(tempGrid, obj, n.id)
+
+            Q.enqueue(NodeQueue(n.id, distanceUnvisitedNode))
+
             println("    enqueue " + n.id)
 
             visitedNodes = visitedNodes + n.id

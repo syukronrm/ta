@@ -102,10 +102,12 @@ object TurningPoint {
       var landmarks = Set[Landmark]()
 
       LMidObjects.foreach(objLMid => {
-        val landmarkMaybe = determineLMid(objL, objLMid, edge, ll, lr, spNodeS, spNodeE)
+        if (objL.obj.id != objLMid.obj.id) {
+          val landmarkMaybe = determineLMid(objL, objLMid, edge, ll, lr, spNodeS, spNodeE)
 
-        if (landmarkMaybe.isDefined) {
-          landmarks += landmarkMaybe.get
+          if (landmarkMaybe.isDefined) {
+            landmarks += landmarkMaybe.get
+          }
         }
       })
 
@@ -128,9 +130,13 @@ object TurningPoint {
           val lr = createLandmarkRight(distance, edge, objL.obj.id)
 
           Q.enqueue(ll)
+          println("      enqueue " + ll)
 
-          if (lr.distance >= 0 & lr.distance <= edge.length.get)
+          if (lr.distance >= 0 & lr.distance <= edge.length.get) {
             Q.enqueue(lr)
+            println("      enqueue " + lr)
+          }
+
 
           println("    Landmark Left  : " + ll.toString)
           println("    Landmark Right : " + lr.toString)
@@ -145,68 +151,66 @@ object TurningPoint {
 
             val objId = objL.obj.id
             println("      There are same objects in edge: objId " + objId)
+
             val obj1 = objL
             val obj2 = similarObject.get
+            println("        obj1 distance " + obj1.distance)
+            println("        obj2 distance " + obj2.distance)
 
-            val obj1Distance = findDistance(obj1, edge, spNodeS, spNodeE)
-            val llObj1 = createLandmarkLeft(obj1Distance, edge, objId)
-            val lrObj1 = createLandmarkRight(obj1Distance, edge, objId)
-
-            val obj2Distance = findDistance(obj2, edge, spNodeS, spNodeE)
-            val llObj2 = createLandmarkLeft(obj2Distance, edge, objId)
-            val lrObj2 = createLandmarkRight(obj2Distance, edge, objId)
-
-            if (lrObj1.distance > llObj2.distance & llObj1.distance < lrObj2.distance) {
-              println("        Overlapped LandmarkRight Object 1 > LandmarkLeft Object 2")
-              val ll = createLandmarkLeft(obj1Distance, edge, objId)
-              val lr = createLandmarkRight(obj2Distance, edge, objId)
+            if (Math.abs(obj2.distance - obj1.distance) == edge.length.get) {
+              // same object
+              val ll = new LandmarkLeft(-0.001, Some(edge.id), objId)
 
               Q.enqueue(ll)
-
-              if (lr.distance >= 0 & lr.distance <= edge.length.get) {
-                Q.enqueue(lr)
-              }
-
-              val sp = SP - obj1 - obj2
-              val lm = findLandmarkMid(sp, obj1, edge, ll, lr, spNodeS, spNodeE)
-
-              lm.foreach(Q.enqueue(_))
-            } else if (llObj2.distance > lrObj1.distance & lrObj2.distance < llObj1.distance) {
-              println("        Overlapped LandmarkLeft Object 1 > LandmarkRight Object 2")
-              val ll = createLandmarkLeft(obj2Distance, edge, objId)
-              val lr = createLandmarkRight(obj1Distance, edge, objId)
-
-              Q.enqueue(ll)
-
-              if (lr.distance >= 0 & lr.distance <= edge.length.get) {
-                Q.enqueue(lr)
-              }
-
-              val sp = SP - obj1 - obj2
-              val lm = findLandmarkMid(sp, obj1, edge, ll, lr, spNodeS, spNodeE)
-
-              lm.foreach(Q.enqueue(_))
             } else {
-              println("        Not overlapped")
-              val spObj1 = SP - obj1
-              val lmObj1 = findLandmarkMid(spObj1, obj1, edge, llObj1, lrObj1, spNodeS, spNodeE)
+              // difference object come from node S and node E
+              val obj1Distance = findDistance(obj1, edge, spNodeS, spNodeE)
+              println("        obj1Distance " + obj1Distance)
+              val llObj1 = createLandmarkLeft(obj1Distance, edge, objId)
+              val lrObj1 = createLandmarkRight(obj1Distance, edge, objId)
+              println("        obj1 LandmarkLeft " + llObj1)
+              println("        obj1 LandmarkLeft " + lrObj1)
 
-              Q.enqueue(llObj1)
-              if (lrObj1.distance >= 0 & lrObj1.distance <= edge.length.get) {
-                Q.enqueue(lrObj1)
+              val obj2Distance = findDistance(obj2, edge, spNodeS, spNodeE)
+              println("        obj2Distance " + obj2Distance)
+              val llObj2 = createLandmarkLeft(obj2Distance, edge, objId)
+              val lrObj2 = createLandmarkRight(obj2Distance, edge, objId)
+              println("        obj2 LandmarkLeft " + llObj2)
+              println("        obj2 LandmarkLeft " + lrObj2)
+
+              if ((lrObj1.distance > llObj2.distance & llObj1.distance < lrObj2.distance)
+                  | (lrObj2.distance > llObj1.distance & llObj2.distance < lrObj1.distance)) {
+                println("        Overlapped")
+                val ll = new LandmarkLeft(-0.001, Some(edge.id), objId)
+                Q.enqueue(ll)
+              } else {
+                println("        Not overlapped")
+                val spObj1 = SP - obj1
+                val lmObj1 = findLandmarkMid(spObj1, obj1, edge, llObj1, lrObj1, spNodeS, spNodeE)
+
+                Q.enqueue(llObj1)
+                println("      enqueue " + llObj1)
+
+                if (lrObj1.distance >= 0 & lrObj1.distance <= edge.length.get) {
+                  Q.enqueue(lrObj1)
+                  println("      enqueue " + lrObj1)
+                }
+
+                lmObj1.foreach(Q.enqueue(_))
+
+                val spObj2 = SP - obj1
+                val lmObj2 = findLandmarkMid(spObj2, obj2, edge, llObj2, lrObj2, spNodeS, spNodeE)
+
+                Q.enqueue(llObj2)
+                println("      enqueue " + llObj2)
+
+                if (lrObj2.distance >= 0 & lrObj2.distance <= edge.length.get) {
+                  Q.enqueue(lrObj2)
+                  println("      enqueue " + lrObj2)
+                }
+
+                lmObj2.foreach(Q.enqueue(_))
               }
-
-              lmObj1.foreach(Q.enqueue(_))
-
-              val spObj2 = SP - obj1
-              val lmObj2 = findLandmarkMid(spObj2, obj2, edge, llObj2, lrObj2, spNodeS, spNodeE)
-
-              Q.enqueue(llObj2)
-              if (lrObj2.distance >= 0 & lrObj2.distance <= edge.length.get) {
-                Q.enqueue(lrObj2)
-              }
-
-              lmObj2.foreach(Q.enqueue(_))
             }
           }
       }
@@ -271,7 +275,7 @@ object TurningPoint {
     val distanceBetween = (objLdistance + objLMidDistance) / 2
     println("      distance between obj1 " + objLId + " obj2 " + objLMidId + " is " + distanceBetween)
 
-    if (distanceBetween >= 0 & distanceBetween <= edge.length.get) {
+    if (distanceBetween >= 0 & distanceBetween <= edge.length.get & Math.abs(objLdistance - distanceBetween) <= D_EPSILON) {
       if (objLdistance > objLMidDistance) {
         println("      obj1 " + objLId + " distance " + objLdistance)
         println("      obj2 " + objLMidId + " distance " + objLMidDistance)

@@ -12,3 +12,4 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 // https://github.com/non/archery
 libraryDependencies += "org.spire-math" %% "archery" % "0.6.0"
+libraryDependencies += "com.github.davidmoten" % "rtree" % "0.8.5"

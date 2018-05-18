@@ -1,6 +1,6 @@
 import scala.collection.mutable
 import archery._
-import HelloWorld._
+import TA._
 import HelloBox._
 import Constants._
 
@@ -97,7 +97,6 @@ object TurningPoint {
                         spNodeS: Set[NodeObject], spNodeE: Set[NodeObject]
                        ): Set[Landmark] = {
       val LMidObjects = determineLMidObjects(sp, objL)
-      println(LMidObjects)
 
       var landmarks = Set[Landmark]()
 

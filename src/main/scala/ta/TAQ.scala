@@ -8,12 +8,12 @@ import ta.grid.Grid
 
 import scala.collection.immutable.Set
 
-case class RawEdge(id: Int, i: Int, j: Int)
 case class RawNode(id: Int, x: Double, y: Double)
+case class RawEdge(id: Int, i: Int, j: Int, lengthMaybe: Option[Double])
 
 object TAQ {
   def main(args: Array[String]): Unit = {
-    val table_nodes_2d = Set(
+    val table_nodes = Set(
       RawNode(1, 2, 1),
       RawNode(2, 19, 1),
       RawNode(3, 3, 3),
@@ -25,21 +25,22 @@ object TAQ {
     )
 
     val table_edges = Set(
-      RawEdge(1, 1, 2),
-      RawEdge(2, 1, 3),
-      RawEdge(3, 2, 5),
-      RawEdge(4, 3, 4),
-      RawEdge(5, 3, 6),
-      RawEdge(6, 4, 5),
-      RawEdge(7, 4, 7),
-      RawEdge(8, 5, 8),
-      RawEdge(9, 6, 7),
-      RawEdge(10, 7, 8),
-      RawEdge(11, 4, 6)
+      RawEdge(1, 1, 2, None),
+      RawEdge(2, 1, 3, None),
+      RawEdge(3, 2, 5, None),
+      RawEdge(4, 3, 4, None),
+      RawEdge(5, 3, 6, None),
+      RawEdge(6, 4, 5, None),
+      RawEdge(7, 4, 7, None),
+      RawEdge(8, 5, 8, None),
+      RawEdge(9, 6, 7, None),
+      RawEdge(10, 7, 8, None),
+      RawEdge(11, 4, 6, None)
     )
 
     val grid = new Grid
-    grid.addRawNodes(table_nodes_2d)
+    grid.addRawNodes(table_nodes)
+    grid.addRawEdges(table_edges)
 
     println("Main!")
   }

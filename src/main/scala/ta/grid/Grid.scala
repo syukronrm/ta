@@ -6,7 +6,7 @@ import collection.spatial.{HyperPoint, RTree, RectBuilder}
 import scala.collection.immutable.Set
 import ta.stream.RawObject
 import ta.Constants._
-import ta.RawNode
+import ta.{RawEdge, RawNode}
 import ta.geometry.{Point2d, Point3d}
 
 import scala.math.{floor, round}
@@ -16,6 +16,7 @@ class Grid {
   private var nodes: Set[Node[_ <: HyperPoint]] = Set()
   private var rawObjects: Set[RawObject] = Set()
 
+  /** create empty RTree */
   def createNewTree(): RTree[_ <: HyperPoint] = {
     new RTree(new Point2d.Builder, 2, 8, RTree.Split.AXIAL)
     DIMENSION match {
@@ -62,18 +63,40 @@ class Grid {
     this.nodes.filter((n: Node[_ <: HyperPoint]) => nodeIds.contains(n.id))
   }
 
+  def addRawEdges(edges: Set[RawEdge]): Unit = {
+    edges.foreach(rawEdge => {
+      val nodei = getNode(rawEdge.i).get
+      val g = getGridLocation(nodei)
+
+      val newEdge = rawEdge.lengthMaybe match {
+        case Some(length) =>
+          Edge(rawEdge.id, rawEdge.i, rawEdge.j, length, g, Set())
+        case None =>
+          val nodej = getNode(rawEdge.j).get
+          val dx = nodej.x - nodei.x
+          val dy = nodej.y - nodei.y
+          val length = Math.sqrt(dx*dx + dy*dy)
+          Edge(rawEdge.id, rawEdge.i, rawEdge.j, length, g, Set())
+      }
+
+      addEdge(newEdge)
+    })
+  }
+
   // edge
-  def getEdget(edgeId: Int): Option[Edge] = this.edges.find(_.id == edgeId)
+  def getEdge(edgeId: Int): Option[Edge] = this.edges.find(_.id == edgeId)
+
   def addEdge(edge: Edge): Unit = {
     val nodei: Int = edge.i
 
     if (!isNodeExist(nodei)) {
       val edgeId = edge.id
-      throw new Error("addEdge $edgeId: Node $nodei tidak tersedia")
+      throw new Error("addEdge $edgeId : Node $nodei tidak tersedia")
     }
 
     this.edges = this.edges + edge
   }
+
   def addEdges(edges: Set[Edge]): Unit = {
     edges.foreach((e: Edge) => {
       addEdge(e)
@@ -102,6 +125,21 @@ class Grid {
   def getGridLocation(node: Node[_ <: HyperPoint]): GridLocation = {
     val gx = math.floor(node.x / GRID_WIDTH).toInt
     val gy = math.floor(node.y / GRID_HEIGHT).toInt
+
+    GridLocation(gx, gy)
+  }
+
+  /** Create new GridLocation object based on x
+    * and y coordinate of node
+    *
+    * @param x x coordinate
+    * @param y y coordinate
+    * @return a GridLocation instance in form of gx: Int
+    *         and gy: Int
+    */
+  def getGridLocation(x: Int, y: Int): GridLocation = {
+    val gx = math.floor(x / GRID_WIDTH).toInt
+    val gy = math.floor(y / GRID_HEIGHT).toInt
 
     GridLocation(gx, gy)
   }

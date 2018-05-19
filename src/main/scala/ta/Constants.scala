@@ -5,4 +5,5 @@ object Constants {
   @inline final val P_THRESHOLD = 0.5
   @inline final val GRID_WIDTH = 5
   @inline final val GRID_HEIGHT = 5
+  @inline final val DIMENSION = 2
 }

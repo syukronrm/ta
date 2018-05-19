@@ -12,15 +12,6 @@ case class RawEdge(id: Int, i: Int, j: Int)
 case class RawNode(id: Int, x: Double, y: Double)
 
 object TAQ {
-  def createNewTree2d[T: RectBuilder[T]](): RTree[T] = {
-    val a = implicitly[RectBuilder[T]]
-    new RTree[T](new a.Builder, 2, 8, RTree.Split.AXIAL)
-  }
-
-  def createNewTree3d(): RTree[Point3d] = {
-    new RTree[Point3d](new Point3d.Builder, 2, 8, RTree.Split.AXIAL)
-  }
-
   def main(args: Array[String]): Unit = {
     val table_nodes_2d = Set(
       RawNode(1, 2, 1),
@@ -47,7 +38,8 @@ object TAQ {
       RawEdge(11, 4, 6)
     )
 
-    val grid = new Grid[Point2d]
+    val grid = new Grid
+    grid.addRawNodes(table_nodes_2d)
 
     println("Main!")
   }

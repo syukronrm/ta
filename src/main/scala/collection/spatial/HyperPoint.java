@@ -20,6 +20,8 @@ package collection.spatial;
  * #L%
  */
 
+import ta.geometry.Point2d;
+
 /**
  * N dimensional point used to signify the bounds of a HyperRect
  *
@@ -65,5 +67,4 @@ public interface HyperPoint {
      * @return distance to the point in the fiven dimension
      */
     double distance(HyperPoint p, int d);
-
 }

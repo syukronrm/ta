@@ -1,20 +1,30 @@
 package ta.grid
 
-import ta.Constants._
-import ta.stream.RawObject
-import ta.grid.Node
-import ta.grid.Edge
+
+import collection.spatial.{HyperPoint, RTree, RectBuilder}
 
 import scala.collection.immutable.Set
+import ta.stream.RawObject
 import ta.Constants._
 import ta.RawNode
+import ta.geometry.{Point2d, Point3d}
 
 import scala.math.{floor, round}
 
-class Grid[T] {
+class Grid {
   private var edges: Set[Edge] = Set()
-  private var nodes: Set[Node[T]] = Set()
+  private var nodes: Set[Node[_ <: HyperPoint]] = Set()
   private var rawObjects: Set[RawObject] = Set()
+
+  def createNewTree(): RTree[_ <: HyperPoint] = {
+    new RTree(new Point2d.Builder, 2, 8, RTree.Split.AXIAL)
+    DIMENSION match {
+      case 2 =>
+        new RTree(new Point2d.Builder(), 2, 8, RTree.Split.AXIAL)
+      case 3 =>
+        new RTree(new Point3d.Builder(), 2, 8, RTree.Split.AXIAL)
+    }
+  }
 
   // raw object
   def getRawObject(objectId: Int): Option[RawObject] = rawObjects.find(_.id == objectId)
@@ -23,13 +33,15 @@ class Grid[T] {
 
   // node
   def addRawNodes(nodes: Set[RawNode]): Unit = {
-    nodes.map(raw => Node(raw.id, raw.x, raw.y, ))
+    val emptyTree = createNewTree()
+    nodes.map(raw => Node(raw.id, raw.x, raw.y, emptyTree, Set()))
+      .foreach(addNode)
   }
 
-  def getNode(nodeId: Int): Option[Node[T]] = this.nodes.find(_.id == nodeId)
-  def addNode(node: Node[T]): Unit = this.nodes = this.nodes + node
-  def addNodes(nodes: Set[Node[T]]): Unit = this.nodes = this.nodes ++ nodes
-  def updateNode(node: Node[T]): Unit = {
+  def getNode(nodeId: Int): Option[Node[_ <: HyperPoint]] = this.nodes.find(_.id == nodeId)
+  def addNode(node: Node[_ <: HyperPoint]): Unit = this.nodes = this.nodes + node
+  def addNodes(nodes: Set[Node[_ <: HyperPoint]]): Unit = this.nodes = this.nodes ++ nodes
+  def updateNode(node: Node[_ <: HyperPoint]): Unit = {
     val removedNode = this.nodes.find(_.id == node.id).get
 
     nodes = this.nodes - removedNode + node
@@ -37,17 +49,17 @@ class Grid[T] {
   def isNodeExist(nodeId: Int): Boolean = this.nodes.exists(_.id == nodeId)
 
   /** Find all nodes inside GridLocation */
-  def getNodes(g: GridLocation): Set[Node[T]] = {
-    this.nodes.filter((n: Node[T]) => {
+  def getNodes(g: GridLocation): Set[Node[_ <: HyperPoint]] = {
+    this.nodes.filter((n: Node[_ <: HyperPoint]) => {
       (round(floor(n.x / GRID_WIDTH)) == g.x) & (round(floor(n.y / GRID_HEIGHT)) == g.y)
     })
   }
 
   /** Find all nodes connected to edges */
-  def getNodes(edges: Set[Edge]): Set[Node[T]] = {
+  def getNodes(edges: Set[Edge]): Set[Node[_ <: HyperPoint]] = {
     val nodeIds = edges.flatMap((e: Edge) => Set(e.i, e.j))
 
-    this.nodes.filter((n: Node[T]) => nodeIds.contains(n.id))
+    this.nodes.filter((n: Node[_ <: HyperPoint]) => nodeIds.contains(n.id))
   }
 
   // edge
@@ -73,8 +85,8 @@ class Grid[T] {
     *  @param nodes list of nodes
     *  @return Edge instance, all edges connected to nodes
     */
-  def getEdges(nodes: Set[Node[T]]): Set[Edge] = {
-    val nodeIds = nodes.map((n: Node[T]) => n.id)
+  def getEdges(nodes: Set[Node[_ <: HyperPoint]]): Set[Edge] = {
+    val nodeIds = nodes.map((n: Node[_ <: HyperPoint]) => n.id)
 
     this.edges.filter((e: Edge) => {
       nodeIds.contains(e.i) | nodeIds.contains(e.j)
@@ -87,7 +99,7 @@ class Grid[T] {
     * @param node node
     * @return a GridLocation instance
     */
-  def getGridLocation(node: Node[T]): GridLocation = {
+  def getGridLocation(node: Node[_ <: HyperPoint]): GridLocation = {
     val gx = math.floor(node.x / GRID_WIDTH).toInt
     val gy = math.floor(node.y / GRID_HEIGHT).toInt
 

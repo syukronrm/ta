@@ -2,7 +2,6 @@ import scala.collection.immutable.Set
 
 import math._
 
-// TODO: ADD INSERTED_STREAM
 class GridIndex() {
   var GRID_WIDTH = 5
   var GRID_HEIGHT = 5
@@ -157,6 +156,4 @@ class GridIndex() {
 
     EdgesNodes(edges, nodes)
   }
-
-  //  def getGridContent(gx: Int, gy: Int): GridIndex =
 }

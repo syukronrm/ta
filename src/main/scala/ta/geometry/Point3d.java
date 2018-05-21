@@ -18,6 +18,8 @@ package ta.geometry;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * #L%
+ *
+ * Modifications copyright (C) 2018 <syukronrm>
  */
 
 import collection.spatial.HyperPoint;
@@ -31,12 +33,20 @@ public final class Point3d implements HyperPoint {
     public final static int Z = 2;
 
 
-    final double x, y, z;
+    final double x, y, z, p;
+
+    public Point3d(final double x, final double y, final double z, final double p) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.p = p;
+    }
 
     public Point3d(final double x, final double y, final double z) {
         this.x = x;
         this.y = y;
         this.z = z;
+        this.p = 0;
     }
 
     @Override

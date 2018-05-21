@@ -18,14 +18,22 @@ package ta.geometry;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * #L%
+ *
+ * Modifications copyright (C) 2018 <syukronrm>
  */
 
 import collection.spatial.HyperPoint;
 import collection.spatial.HyperRect;
 import collection.spatial.RectBuilder;
 
+import java.util.List;
+
 public final class Rect3d implements HyperRect {
-    private final Point3d min, max;
+    private Point3d min, max;
+
+    public Rect3d(List<Point3d> points) {
+        setPoints(points);
+    }
 
     Rect3d(final Point3d p) {
         min = new Point3d(p.x, p.y, p.z);
@@ -160,6 +168,31 @@ public final class Rect3d implements HyperRect {
             p += 4.0 * this.getRange(d);
         }
         return p;
+    }
+
+    @Override
+    public HyperRect getPDR() {
+        return null;
+    }
+
+    @Override
+    public HyperRect getDDR() {
+        return null;
+    }
+
+    @Override
+    public HyperRect getPDD() {
+        return null;
+    }
+
+    @Override
+    public HyperRect getDDD() {
+        return null;
+    }
+
+    @Override
+    public void setPoints(List list) {
+
     }
 
     @Override

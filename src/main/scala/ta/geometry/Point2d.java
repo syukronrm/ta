@@ -18,6 +18,8 @@ package ta.geometry;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * #L%
+ *
+ * Modifications copyright (C) 2018 <syukronrm>
  */
 
 import collection.spatial.HyperPoint;
@@ -32,11 +34,21 @@ public final class Point2d implements HyperPoint {
     public static final int X = 0;
     public static final int Y = 1;
 
-    final double x, y;
+    public final double x, y, p;
+    public final int o;
+
+    public Point2d(final double x, final double y, final double p, final int o) {
+        this.x = x;
+        this.y = y;
+        this.p = p;
+        this.o = o;
+    }
 
     public Point2d(final double x, final double y) {
         this.x = x;
         this.y = y;
+        this.p = 0;
+        this.o = 0;
     }
 
     @Override
@@ -82,12 +94,14 @@ public final class Point2d implements HyperPoint {
 
         final Point2d p = (Point2d) o;
         return RTree.isEqual(x, p.x) &&
-                RTree.isEqual(y, p.y);
+                RTree.isEqual(y, p.y) &&
+                RTree.isEqual(this.p, p.p) &&
+                this.o == p.p;
     }
 
 
     public int hashCode() {
-        return Double.hashCode(x) ^ 31*Double.hashCode(y);
+        return Double.hashCode(x) ^ 31*Double.hashCode(y) ^ 31*31*Double.hashCode(p) ^ 31*31*Double.hashCode(o);
     }
 
     public final static class Builder implements RectBuilder<Point2d> {

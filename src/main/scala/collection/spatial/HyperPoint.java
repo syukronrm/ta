@@ -20,8 +20,6 @@ package collection.spatial;
  * #L%
  */
 
-import ta.geometry.Point2d;
-
 /**
  * N dimensional point used to signify the bounds of a HyperRect
  *

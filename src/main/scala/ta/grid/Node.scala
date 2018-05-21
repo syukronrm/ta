@@ -5,4 +5,4 @@ import ta.geometry.Point2d
 
 sealed abstract class AbstractNode
 
-case class Node[T](id: Int, x: Double, y: Double, _tree: RTree[T], objects: Set[Object]) extends AbstractNode
+case class Node(id: Int, x: Double, y: Double, var tree: RTree[Point2d], var objects: Set[Object]) extends AbstractNode

@@ -498,6 +498,28 @@ object TA {
     )
 
 
+    import collection.spatial.RTree
+    import ta.geometry.Point2d
+    import ta.geometry.Rect2d
+    val pTree = new RTree[Point2d](new Point2d.Builder, 2, 8, RTree.Split.AXIAL)
+
+
+
+    var i = 0
+    while ( {
+      i < 10
+    }) {
+      pTree.add(new Point2d(i, i))
+
+      {
+        i += 1; i - 1
+      }
+    }
+
+    val result: Array[Point2d] = new Array[Point2d](10)
+    val rect: Rect2d = new Rect2d(new Point2d(2, 2), new Point2d(8, 8))
+    val n = pTree.search(rect, result)
+
     var grid = new GridIndex()
 
     grid.addNodes(table_nodes)

@@ -18,17 +18,25 @@ package ta.geometry;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * #L%
+ *
+ * Modifications copyright (C) 2018 <syukronrm>
  */
 
 import collection.spatial.HyperPoint;
 import collection.spatial.HyperRect;
 import collection.spatial.RectBuilder;
 
+import java.util.List;
+
 /**
  * Created by jcovert on 6/15/15.
  */
 public final class Rect2d implements HyperRect {
-    final Point2d min, max;
+    private Point2d min, max;
+
+    public Rect2d(List<Point2d> points) {
+        setPoints(points);
+    }
 
     public Rect2d(final Point2d p) {
         min = new Point2d(p.x, p.y);
@@ -63,6 +71,35 @@ public final class Rect2d implements HyperRect {
         max = new Point2d(maxX, maxY);
     }
 
+
+    @Override
+    public void setPoints(List points) {
+        double minX, minY, maxX, maxY;
+        minX = Double.MAX_VALUE;
+        minY = Double.MAX_VALUE;
+        maxX = Double.MIN_VALUE;
+        maxY = Double.MIN_VALUE;
+
+        for (Object point : points) {
+            Point2d p = (Point2d) point;
+
+            if (p.x < minX) {
+                minX = p.x;
+            } else if (p.x > maxX) {
+                maxX = p.x;
+            }
+
+            if (p.y < minY) {
+                minY = p.y;
+            } else if (p.y > maxY) {
+                maxY = p.y;
+            }
+        }
+
+        min = new Point2d(minX, minY);
+        max = new Point2d(maxX, maxY);
+    }
+
     @Override
     public HyperRect getMbr(final HyperRect r) {
         final Rect2d r2 = (Rect2d)r;
@@ -72,7 +109,46 @@ public final class Rect2d implements HyperRect {
         final double maxY = Math.max(max.y, r2.max.y);
 
         return new Rect2d(minX, minY, maxX, maxY);
+    }
 
+    @Override
+    public HyperRect getPDR() {
+        final double minX = min.x;
+        final double minY = min.y;
+        final double maxX = Double.MAX_VALUE;
+        final double maxY = Double.MAX_VALUE;
+
+        return new Rect2d(minX, minY, maxX, maxY);
+    }
+
+    @Override
+    public HyperRect getDDR() {
+        final double minX = max.x;
+        final double minY = max.y;
+        final double maxX = Double.MAX_VALUE;
+        final double maxY = Double.MAX_VALUE;
+
+        return new Rect2d(minX, minY, maxX, maxY);
+    }
+
+    @Override
+    public HyperRect getPDD() {
+        final double minX = Double.MIN_VALUE;
+        final double minY = Double.MIN_VALUE;
+        final double maxX = max.x;
+        final double maxY = max.y;
+
+        return new Rect2d(minX, minY, maxX, maxY);
+    }
+
+    @Override
+    public HyperRect getDDD() {
+        final double minX = Double.MIN_VALUE;
+        final double minY = Double.MIN_VALUE;
+        final double maxX = min.x;
+        final double maxY = min.y;
+
+        return new Rect2d(minX, minY, maxX, maxY);
     }
 
     @Override

@@ -3,6 +3,8 @@ import collection.spatial.HyperPoint;
 import collection.spatial.RectBuilder;
 import collection.spatial.RTree;
 
+import java.util.List;
+
 /**
  * Created by jcovert on 6/15/15.
  */
@@ -116,5 +118,30 @@ public class Rect2D implements HyperRect {
         final double dy = max.y - min.y;
 
         return Math.sqrt(dx * dx + dy + dy);
+    }
+
+    @Override
+    public void setPoints(List list) {
+        
+    }
+
+    @Override
+    public HyperRect getPDR() {
+        return null;
+    }
+
+    @Override
+    public HyperRect getDDR() {
+        return null;
+    }
+
+    @Override
+    public HyperRect getPDD() {
+        return null;
+    }
+
+    @Override
+    public HyperRect getDDD() {
+        return null;
     }
 }

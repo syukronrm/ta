@@ -1,10 +1,13 @@
 package ta
 
-import collection.geometry._
 import collection.spatial.{HyperPoint, RTree, RectBuilder}
 import ta.grid.Node
 import ta.grid.Edge
 import ta.grid.Grid
+import ta.stream.{ExpiredObject, RawObject}
+import ta.geometry.{Point2d}
+
+import ta.algorithm.TheAlgorithm._
 
 import scala.collection.immutable.Set
 
@@ -38,9 +41,23 @@ object TAQ {
       RawEdge(11, 4, 6, None)
     )
 
-    val grid = new Grid
+    val streams = List(
+      RawObject(1, 1, 0.5, List(new Point2d(5, 7, .6, 1), new Point2d(4, 5, .1, 1), new Point2d(7, 6, .3, 1))),
+      RawObject(2, 2, 0.5, List(new Point2d(6, 8, .6, 2), new Point2d(4, 4, .1, 2), new Point2d(7, 6, .3, 2))),
+      ExpiredObject(1),
+      RawObject(3, 2, 0.6, List(new Point2d(5, 6, .4, 3), new Point2d(5, 6, .2, 3), new Point2d(6, 6, .4, 3))),
+      RawObject(4, 3, 0.5, List(new Point2d(1, 3, .2, 4), new Point2d(3, 2, .3, 4), new Point2d(1, 4, .5, 4)))
+    )
+
+    var grid = new Grid
+
     grid.addRawNodes(table_nodes)
     grid.addRawEdges(table_edges)
+
+    streams.foldLeft(streams) {(acc, stream) => {
+      grid = TheAlgorithm(grid, stream)
+      acc
+    }}
 
     println("Main!")
   }

@@ -20,6 +20,7 @@ package collection.spatial;
  * #L%
  */
 
+import java.lang.reflect.Array;
 import java.util.function.Consumer;
 
 /**

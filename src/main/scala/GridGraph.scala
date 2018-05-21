@@ -12,7 +12,7 @@ object GridGraph {
   private def n(g: Graph[String, WUnDiEdge], outer: String): g.NodeT = g get outer
 
   def addEdgeClass(graph: Graph[String, WUnDiEdge], edge: EdgeGrid): Graph[String, WUnDiEdge] =
-    addEdge(graph, "n" + edge.nodei.toString, "n" + edge.nodej.toString, edge.length.get)
+    addEdge(graph, "o" + edge.nodei.toString, "o" + edge.nodej.toString, edge.length.get)
 
   def addEdge(graph: Graph[String, WUnDiEdge], nodei: String, nodej: String, weight: Double): Graph[String, WUnDiEdge] =
     graph ++ Graph(nodei~nodej % weight)
@@ -29,18 +29,18 @@ object GridGraph {
     val lengthNodej: Double = edge.get.length.get * (1 - obj.pos)
 
     val g = addEdge(graph,
-      "n" + nodei.get.id.toString,
+      "o" + nodei.get.id.toString,
       "u" + obj.id.toString,
       lengthNodei)
 
     addEdge(g,
-      "n" + nodej.get.id.toString,
+      "o" + nodej.get.id.toString,
       "u" + obj.id.toString,
       lengthNodej)
   }
 
   def getDistance(graph: Graph[String, WUnDiEdge], obj: UncertainObject, node: NodeGrid): Option[Double] = {
-    val nodeStr = "n" + node.id.toString
+    val nodeStr = "o" + node.id.toString
     val objStr = "u" + obj.id.toString
 
     val sp = n(graph, objStr) shortestPathTo n(graph, nodeStr)

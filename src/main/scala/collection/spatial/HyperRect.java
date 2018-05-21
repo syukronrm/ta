@@ -20,6 +20,8 @@ package collection.spatial;
  * #L%
  */
 
+import java.util.List;
+
 /**
  * An N dimensional rectangle or "hypercube" that is a representation of a data entry.
  *
@@ -104,4 +106,16 @@ public interface HyperRect<D extends Comparable<D>> {
      * @return - perimeter
      */
     double perimeter();
+
+    /**
+     * Set min and max value from points
+     *
+     * @param points - list of HyperPoint
+     */
+    void setPoints(List<HyperPoint> points);
+
+    HyperRect getPDR();
+    HyperRect getDDR();
+    HyperRect getPDD();
+    HyperRect getDDD();
 }

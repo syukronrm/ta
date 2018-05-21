@@ -71,7 +71,7 @@ class TempGraph {
 
     graph = result
   }
-  
+
   def n(g: Graph[Node, WLkUnDiEdge], outer: Node): g.NodeT = g get outer
 
   def calculateDistance(rawObject: RawObject, nodeId: Int): Double = {

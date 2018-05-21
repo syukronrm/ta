@@ -9,6 +9,8 @@ import ta.stream.{ExpiredObject, RawObject, Stream}
 import ta.Constants._
 import ta.geometry.{Point2d, Rect2d, Rect3d}
 import ta.grid.Rect._
+import ta.algorithm.TurningPoint
+import ta.algorithm.TurningPoint._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
@@ -115,7 +117,33 @@ object TheAlgorithm {
       }
     }
 
+    computeTurningPoint(tempGraph.graph)
+    updateGrid(grid, tempGraph.graph)
+  }
+
+  def updateGrid(grid: Grid, graph: Graph[Node, WLkUnDiEdge]): Grid = {
+    grid.updateNodes(graph.nodes.toOuter)
+
     grid
+  }
+
+  def computeTurningPoint(graph: Graph[Node, WLkUnDiEdge]): Unit = {
+    graph.edges.foreach(e => {
+      val nodeSId = e.label.asInstanceOf[Edge].i
+
+      val List(nodeS, nodeE) = if (e._1.toOuter.id == nodeSId) {
+        List(e._1.toOuter, e._2.toOuter)
+      } else {
+        List(e._2.toOuter, e._1.toOuter)
+      }
+
+      val edge = e.label.asInstanceOf[Edge]
+
+      println("\n")
+      println("==========")
+      println("Process Turning Point edge " + edge.id + " " + nodeS.id + "~" + nodeE.id + " " + edge.length)
+      processLandmark(nodeS, edge, nodeE)
+    })
   }
 
   def removePoints(tree: RTree[Point2d], points: List[Point2d]): RTree[Point2d] = {
@@ -137,7 +165,6 @@ object TheAlgorithm {
 
     val toBeDeletedPoints = objectMaybe.get.points
 
-//    currentNode.tree = removePoints(currentNode.tree, toBeDeletedPoints)
     for (point <- toBeDeletedPoints) {
       currentNode.tree.remove(point)
     }
@@ -145,11 +172,11 @@ object TheAlgorithm {
     var overlappedObjects = findPDROverlappedObjects(currentNode, rect)
 
     overlappedObjects = overlappedObjects.map {
-      case q@Object(_, _, _, true, _, _, _) => q
-      case q@Object(a, b, _, d, e, f, g) =>
+      case q@Object(_, _, _, true, _, _, _, _) => q
+      case q@Object(a, b, _, d, e, f, g, h) =>
         val skyProb = SkyPrX(currentNode.tree, q.id)
         println("      SkyProb object " + q.id + " = " + skyProb)
-        Object(a, b, skyProb, d, e, f, g)
+        Object(a, b, skyProb, d, e, f, g, h)
     }
 
     overlappedObjects = overlappedObjects.filterNot(_.id == objectId)
@@ -162,8 +189,6 @@ object TheAlgorithm {
                    distance: Double,
                    rect: Rect2d): Node = {
 
-//    val clonedTree = node.tree.clone().asInstanceOf[RTree[Point2d]]
-
     val overlappedObjects = findPDROverlappedObjects(node, rect)
     println("    overlapped objects:")
     val updatedOverlappedObjects = overlappedObjects.map(q => {
@@ -173,7 +198,7 @@ object TheAlgorithm {
       if (ddrRect.contains(qRect)) {
         println("      mark " + q.id + " as impossible")
         // Object is impossible
-        Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance)
+        Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance, q.position)
       } else {
         rawObject.points.foreach(p => node.tree.add(p))
         val objProb = getDominationProbability(node.tree, ddrRect, q.id)
@@ -182,13 +207,13 @@ object TheAlgorithm {
         if (objProb > (1 - P_THRESHOLD)) {
           println("        mark " + q.id + " as impossible")
           // Object is impossible
-          Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance)
+          Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance, q.position)
         } else {
           rawObject.points.foreach(p => node.tree.add(p))
           val skyProb = SkyPrX(node.tree, q.id)
           rawObject.points.foreach(p => node.tree.remove(p))
           println("      SkyProb object " + q.id + " = " + skyProb)
-          Object(q.id, q.edgeId, skyProb, q.isImpossible, node.id, q.points, q.distance)
+          Object(q.id, q.edgeId, skyProb, q.isImpossible, node.id, q.points, q.distance, q.position)
         }
       }
     })
@@ -207,7 +232,7 @@ object TheAlgorithm {
     val skyProbU = SkyPrX(node.tree, rawObject.id)
     println("    SkyProb incoming object " + rawObject.id + " = " + skyProbU)
     val finalObjects = updatedObjects +
-        Object(rawObject.id, rawObject.edgeId, skyProbU, isImpossible = false, node.id, rawObject.points, distance)
+        Object(rawObject.id, rawObject.edgeId, skyProbU, isImpossible = false, node.id, rawObject.points, distance, rawObject.position)
     Node(node.id, node.x, node.y, node.tree, finalObjects)
   }
 
@@ -287,45 +312,4 @@ object TheAlgorithm {
 
     objects.toSet
   }
-
-//  def insertToNode(node: NodeGrid, obj: UncertainObject, distance: Double): NodeGrid = {
-//    val incomingEntries = createEntryTuples(obj)
-//
-//    val pdrOverlappedObjects = findPdrOverlappedObjects(node, obj)
-//
-//    val updatedOverlappedObjects = pdrOverlappedObjects.map(q => {
-//      val ddrObj = expandDdr(obj.bbox)
-//      val bboxQ = q.obj.bbox
-//      if (ddrObj.contains(bboxQ)) {
-//        NodeObject(q.obj, q.skyProb, isImpossible = true, q.distance)
-//      } else {
-//        val bbox = expandDdr(obj.bbox)
-//
-//        val objProb = getDominationProbability(node.tree, bbox, q.obj.id)
-//
-//        if (objProb > (1 - P_THRESHOLD)) {
-//          NodeObject(q.obj, q.skyProb, isImpossible = true, q.distance)
-//        } else {
-//          val skyProb = SkyPrX(node.tree.insertAll(incomingEntries), q.obj.id)
-//          NodeObject(q.obj, skyProb, q.isImpossible, q.distance)
-//        }
-//      }
-//    })
-//
-//    // INSERT OBJECT TO TREE
-//    val tree = node.tree.insertAll(incomingEntries)
-//
-//    val updatedObjects = node.objects.map(o => {
-//      val updated = updatedOverlappedObjects.find(_.obj.id == o.obj.id)
-//
-//      if (updated.nonEmpty)
-//        updated.get
-//      else
-//        o
-//    })
-//
-//    val skyProbU = SkyPrX(tree, obj.id)
-//    val finalObjects = updatedObjects + NodeObject(obj, skyProbU, isImpossible = false, distance)
-//    NodeGrid(node.id, node.x, node.y, tree, finalObjects)
-//  }
 }

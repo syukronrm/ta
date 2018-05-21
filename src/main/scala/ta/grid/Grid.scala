@@ -50,6 +50,18 @@ class Grid {
     currentNode.tree = node.tree
     currentNode.objects = node.objects
   }
+
+  def updateNodes(nodes: Set[Node]): Unit = {
+    val updatedNodeIds = nodes.map(_.id)
+
+    this.nodes =
+      this.nodes
+        .filterNot(n => {
+          updatedNodeIds.contains(n.id)
+        })
+        .++(nodes)
+  }
+
   def isNodeExist(nodeId: Int): Boolean = this.nodes.exists(_.id == nodeId)
 
   /** Find all nodes inside GridLocation */
@@ -108,7 +120,7 @@ class Grid {
 
   def addObjectToEdge(rawObject: RawObject): Unit = {
     val edge = this.edges.find(_.id == rawObject.edgeId).get
-    val newObject = Object(rawObject.id, rawObject.edgeId, 100, isImpossible = false, edge.i, rawObject.points, 0)
+    val newObject = Object(rawObject.id, rawObject.edgeId, 100, isImpossible = false, edge.i, rawObject.points, 0, rawObject.position)
     addObjectToEdge(newObject)
   }
 

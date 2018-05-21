@@ -1,108 +1,49 @@
+package ta.algorithm
+
+import collection.spatial.RTree
+
 import scala.collection.mutable
-import archery._
-import TA._
-import HelloBox._
-import Constants._
+import ta.grid.Node
+import ta.grid.Edge
+import ta.grid.Object
+import ta.Constants._
+import ta.geometry._
+import ta.stream.RawObject
+import ta.landmark._
+import ta.algorithm.TheAlgorithm._
 
+import scala.collection.JavaConverters._
 
-trait Landmark {
-  val distance: Double // Distance to Node S
-  val edgeId: Option[Int]
-  val objId: Int
-
-  override def toString: String = {
-    val edge = if (edgeId.isDefined) edgeId.get.toString else "None"
-    "edgeId " + edge + " distance " + distance.toString + " obj " + objId
-  }
-}
-
-class LandmarkLeft(_distance: Double, _edgeId: Option[Int], _objId: Int) extends Landmark {
-  override val distance: Double = _distance
-  override val edgeId: Option[Int] = _edgeId
-  override val objId: Int = _objId
-
-  override def toString: String = {
-    val edge = if (edgeId.isDefined) edgeId.get.toString else "None"
-    "LandmarkLeft in edgeId " + edge + " between objId " + objId + " in location " + distance
-  }
-}
-
-class LandmarkLeftMid(_distance: Double, _edgeId: Option[Int], _objId: Int, _objDominatedId: Int) extends Landmark {
-  override val distance: Double = _distance
-  override val edgeId: Option[Int] = _edgeId
-  override val objId: Int = _objId
-  val objDominatedId: Int = _objDominatedId
-
-  override def toString: String = {
-    val edge = if (edgeId.isDefined) edgeId.get.toString else "None"
-    "LandmarkLeftMid in edgeId " + edge + " between objId " + objId + " and objId' " + objDominatedId + " in location " + distance
-  }
-}
-
-class LandmarkRight(_distance: Double, _edgeId: Option[Int], _objId: Int) extends Landmark {
-  override val distance: Double = _distance
-  override val edgeId: Option[Int] = _edgeId
-  override val objId: Int = _objId
-
-  override def toString: String = {
-    val edge = if (edgeId.isDefined) edgeId.get.toString else "None"
-    "LandmarkRight in edgeId " + edge + " between objId " + objId + " in location " + distance
-  }
-}
-
-class LandmarkRightMid(_distance: Double, _edgeId: Option[Int], _objId: Int, _objDominatedId: Int) extends Landmark {
-  override val distance: Double = _distance
-  override val edgeId: Option[Int] = _edgeId
-  override val objId: Int = _objId
-  val objDominatedId: Int = _objDominatedId
-
-  override def toString: String = {
-    val edge = if (edgeId.isDefined) edgeId.get.toString else "None"
-    "LandmarkRightMid in edgeId " + edge + " between objId " + objId + " and objId' " + objDominatedId + " in location " + distance
-  }
-}
-
-case class TP(dStart: Double, dEnd: Double, SP: Set[NodeObject])
+case class TP(dStart: Double, dEnd: Double, SP: Set[Object])
 
 object TurningPoint {
-  def processLandmark(nodeS: NodeGrid, edge: EdgeGrid, nodeE: NodeGrid): Unit = {
+  def processLandmark(nodeS: Node, edge: Edge, nodeE: Node): Unit = {
     val spNodeS = nodeS.objects
     val spNodeE = nodeE.objects
+    val spEdge = edge.objects
     val uncertainDataSpEdge = edge.objects
 
-    val findSimilar = (objects: Set[NodeObject], obj: NodeObject) =>
-      objects.find(o => o.obj.id == obj.obj.id & o != obj)
+    val findSimilar = (objects: Set[Object], obj: Object) =>
+      objects.find(o => o.id == obj.id & o != obj)
 
-    def convertToNodeObject (objects: Set[UncertainObject], edgeLength: Double): Set[NodeObject] = {
-      objects.map(o => {
-        val distance = edgeLength * o.pos
-        println("  objId " + o.id + " distance " + distance)
-        NodeObject(o, 100, isImpossible = false, distance)
-      })
+    def filterSPs(spNodeS: Set[Object], spNodeE: Set[Object], spEdge: Set[Object]): Set[Object] = {
+      spNodeS ++ spNodeE ++ spEdge
     }
 
-    def filterSPs(spNodeS: Set[NodeObject], spNodeE: Set[NodeObject], uncertainDataSpEdge: Set[UncertainObject], edge: EdgeGrid): Set[NodeObject] = {
-      var SPs = spNodeS ++ spNodeE
-      val spEdge = convertToNodeObject(uncertainDataSpEdge, edge.length.get)
-
-      SPs = SPs ++ spEdge
-      SPs
-    }
-
-    val SP = filterSPs(spNodeS, spNodeE, uncertainDataSpEdge, edge)
-    println("GSP " + SP.map(_.obj.id).toString())
+    val SP = filterSPs(spNodeS, spNodeE, spEdge)
+    println("GSP " + SP.map(_.id).toString())
     val Q = mutable.Queue[Landmark]()
 
-    def findLandmarkMid(sp: Set[NodeObject], objL: NodeObject, edge: EdgeGrid,
+    def findLandmarkMid(sp: Set[Object], objL: Object, edge: Edge,
                         ll: LandmarkLeft, lr: LandmarkRight,
-                        spNodeS: Set[NodeObject], spNodeE: Set[NodeObject]
+                        spNodeS: Set[Object], spNodeE: Set[Object]
                        ): Set[Landmark] = {
       val LMidObjects = determineLMidObjects(sp, objL)
 
       var landmarks = Set[Landmark]()
 
       LMidObjects.foreach(objLMid => {
-        if (objL.obj.id != objLMid.obj.id) {
+        if (objL.id != objLMid.id) {
           val landmarkMaybe = determineLMid(objL, objLMid, edge, ll, lr, spNodeS, spNodeE)
 
           if (landmarkMaybe.isDefined) {
@@ -117,7 +58,7 @@ object TurningPoint {
     var similarObjectIds = Set[Int]()
 
     SP.foreach(objL => {
-      println("  Object " + objL.obj.id)
+      println("  Object " + objL.id)
 
       val similarObject = findSimilar(SP, objL)
 
@@ -126,13 +67,13 @@ object TurningPoint {
           val distance = findDistance(objL, edge, spNodeS, spNodeE)
           println("    distance from node S " + distance)
 
-          val ll = createLandmarkLeft(distance, edge, objL.obj.id)
-          val lr = createLandmarkRight(distance, edge, objL.obj.id)
+          val ll = createLandmarkLeft(distance, edge, objL.id)
+          val lr = createLandmarkRight(distance, edge, objL.id)
 
           Q.enqueue(ll)
           println("      enqueue " + ll)
 
-          if (lr.distance >= 0 & lr.distance <= edge.length.get) {
+          if (lr.distance >= 0 & lr.distance <= edge.length) {
             Q.enqueue(lr)
             println("      enqueue " + lr)
           }
@@ -146,10 +87,10 @@ object TurningPoint {
 
           lm.foreach(Q.enqueue(_))
         case _ =>
-          if (!similarObjectIds.contains(similarObject.get.obj.id)) {
-            similarObjectIds = similarObjectIds + similarObject.get.obj.id
+          if (!similarObjectIds.contains(similarObject.get.id)) {
+            similarObjectIds = similarObjectIds + similarObject.get.id
 
-            val objId = objL.obj.id
+            val objId = objL.id
             println("      There are same objects in edge: objId " + objId)
 
             val obj1 = objL
@@ -157,7 +98,7 @@ object TurningPoint {
             println("        obj1 distance " + obj1.distance)
             println("        obj2 distance " + obj2.distance)
 
-            if (Math.abs(obj2.distance - obj1.distance) == edge.length.get) {
+            if (Math.abs(obj2.distance - obj1.distance) == edge.length) {
               // same object
               val ll = new LandmarkLeft(-0.001, Some(edge.id), objId)
 
@@ -191,7 +132,7 @@ object TurningPoint {
                 Q.enqueue(llObj1)
                 println("      enqueue " + llObj1)
 
-                if (lrObj1.distance >= 0 & lrObj1.distance <= edge.length.get) {
+                if (lrObj1.distance >= 0 & lrObj1.distance <= edge.length) {
                   Q.enqueue(lrObj1)
                   println("      enqueue " + lrObj1)
                 }
@@ -204,7 +145,7 @@ object TurningPoint {
                 Q.enqueue(llObj2)
                 println("      enqueue " + llObj2)
 
-                if (lrObj2.distance >= 0 & lrObj2.distance <= edge.length.get) {
+                if (lrObj2.distance >= 0 & lrObj2.distance <= edge.length) {
                   Q.enqueue(lrObj2)
                   println("      enqueue " + lrObj2)
                 }
@@ -226,10 +167,10 @@ object TurningPoint {
     processLandmark(Q.toList, SP, edge)
   }
 
-  def createLandmarkLeft(distance: Double, edge: EdgeGrid, objLId: Int): LandmarkLeft = {
+  def createLandmarkLeft(distance: Double, edge: Edge, objLId: Int): LandmarkLeft = {
     val loc = distance - D_EPSILON
     val edgeIdMaybe =
-      if (loc >= 0 & loc <= edge.length.get) {
+      if (loc >= 0 & loc <= edge.length) {
         Some(edge.id)
       } else {
         None
@@ -238,10 +179,10 @@ object TurningPoint {
     new LandmarkLeft(loc, edgeIdMaybe, objLId)
   }
 
-  def createLandmarkRight(distance: Double, edge: EdgeGrid, objLId: Int): LandmarkRight = {
+  def createLandmarkRight(distance: Double, edge: Edge, objLId: Int): LandmarkRight = {
     val loc = distance + D_EPSILON
     val edgeIdMaybe =
-      if (loc >= 0 & loc <= edge.length.get) {
+      if (loc >= 0 & loc <= edge.length) {
         Some(edge.id)
       } else {
         None
@@ -250,32 +191,32 @@ object TurningPoint {
     new LandmarkRight(loc, edgeIdMaybe, objLId)
   }
 
-  def findDistance(obj: NodeObject, edge: EdgeGrid, spNodeS: Set[NodeObject], spNodeE: Set[NodeObject]): Double = {
-    if (obj.obj.edgeId == edge.id) {
-      println("    DEBUG distance obj " + obj.obj.id + " : in edge " + edge.id + " len edge " + edge.length.get + " position " + obj.obj.pos)
-      edge.length.get * obj.obj.pos
+  def findDistance(obj: Object, edge: Edge, spNodeS: Set[Object], spNodeE: Set[Object]): Double = {
+    if (obj.edgeId == edge.id) {
+      println("    DEBUG distance obj " + obj.id + " : in edge " + edge.id + " len edge " + edge.length + " position " + obj.position)
+      edge.length * obj.position
     } else {
       if (spNodeS.contains(obj)) {
-        println("    DEBUG distance obj " + obj.obj.id + " from node s " + obj.distance)
+        println("    DEBUG distance obj " + obj.id + " from node s " + obj.distance)
         obj.distance * -1
       } else {
-        println("    DEBUG distance obj " + obj.obj.id + " from node e " + obj.distance)
-        obj.distance + edge.length.get
+        println("    DEBUG distance obj " + obj.id + " from node e " + obj.distance)
+        obj.distance + edge.length
       }
     }
   }
 
-  def determineLMid(objL: NodeObject, objLMid: NodeObject, edge: EdgeGrid, ll: LandmarkLeft, lr: LandmarkRight, spNodeS: Set[NodeObject], spNodeE: Set[NodeObject]): Option[Landmark] = {
+  def determineLMid(objL: Object, objLMid: Object, edge: Edge, ll: LandmarkLeft, lr: LandmarkRight, spNodeS: Set[Object], spNodeE: Set[Object]): Option[Landmark] = {
     val objLdistance = findDistance(objL, edge, spNodeS, spNodeE)
     val objLMidDistance = findDistance(objLMid, edge, spNodeS, spNodeE)
 
-    val objLId = objL.obj.id
-    val objLMidId = objLMid.obj.id
+    val objLId = objL.id
+    val objLMidId = objLMid.id
 
     val distanceBetween = (objLdistance + objLMidDistance) / 2
     println("      distance between obj1 " + objLId + " obj2 " + objLMidId + " is " + distanceBetween)
 
-    if (distanceBetween >= 0 & distanceBetween <= edge.length.get & Math.abs(objLdistance - distanceBetween) <= D_EPSILON) {
+    if (distanceBetween >= 0 & distanceBetween <= edge.length & Math.abs(objLdistance - distanceBetween) <= D_EPSILON) {
       if (objLdistance > objLMidDistance) {
         println("      obj1 " + objLId + " distance " + objLdistance)
         println("      obj2 " + objLMidId + " distance " + objLMidDistance)
@@ -292,16 +233,20 @@ object TurningPoint {
     }
   }
 
-  def determineLMidObjects(sp: Set[NodeObject], objL: NodeObject): Set[NodeObject] = {
+  def determineLMidObjects(sp: Set[Object], objL: Object): Set[Object] = {
     sp.filter(o => {
-      val tupleObj = createEntryTuples(objL.obj)
-      val tupleObj_ = createEntryTuples(o.obj)
-      val tree = RTree().insertAll(tupleObj).insertAll(tupleObj_)
+      val pointsL = objL.points
+      val points = o.points
 
-      val bbox = expandDdr(objL.obj.bbox)
-      val objProb = getDominationProbability(tree, bbox, o.obj.id)
+      val tree = new RTree(new Point2d.Builder(), 2, 8, RTree.Split.AXIAL)
 
-//      println("      obj "+ objL.obj.id +" obj " + o.obj.id + " objProb " + objProb)
+      pointsL.foreach(p => tree.add(p))
+      points.foreach(p => tree.add(p))
+
+      val ddrRect = new Rect2d(pointsL.asJava).getDDR.asInstanceOf[Rect2d]
+
+      val objProb = getDominationProbability(tree, ddrRect, o.id)
+
       if (objProb > 1 - P_THRESHOLD)
         true
       else
@@ -329,21 +274,21 @@ object TurningPoint {
     initialSP.toSeq
   }
 
-  def processLandmark(landmarks: List[Landmark], objects: Set[NodeObject], edge: EdgeGrid): Unit = {
+  def processLandmark(landmarks: List[Landmark], objects: Set[Object], edge: Edge): Unit = {
     val sortedLandmarks = landmarks.toSeq.sortBy(_.distance)
 
-    var SP = findInitialSPIds(sortedLandmarks).map(objId => objects.find(_.obj.id == objId).get).toSet
+    var SP = findInitialSPIds(sortedLandmarks).map(objId => objects.find(_.id == objId).get).toSet
 
     val filteredLandmarks = sortedLandmarks.filterNot(_.distance < 0)
     val queue = scala.collection.mutable.Queue[Landmark](filteredLandmarks: _*)
 
     var dStart: Double = 0
-    val dEnd: Double = edge.length.get
+    val dEnd: Double = edge.length
 
     var turningPointList = Vector[TP]()
 
-    def isObjectInSP(SP: Set[NodeObject], objId: Int): Boolean = {
-      SP.exists(_.obj.id == objId)
+    def isObjectInSP(SP: Set[Object], objId: Int): Boolean = {
+      SP.exists(_.id == objId)
     }
 
     while (queue.nonEmpty) {
@@ -359,7 +304,7 @@ object TurningPoint {
           }
 
           if (!isLandmarkRightMidExist) {
-            val obj = objects.find(_.obj.id == l.objId).get
+            val obj = objects.find(_.id == l.objId).get
 
             turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
 
@@ -368,7 +313,7 @@ object TurningPoint {
           }
         case _: LandmarkRight =>
           if (isObjectInSP(SP, l.objId)) {
-            val obj = SP.find(_.obj.id == l.objId).get
+            val obj = SP.find(_.id == l.objId).get
 
             turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
 
@@ -379,7 +324,7 @@ object TurningPoint {
 
           if (isObjectInSP(SP, landmark.objId)
             & isObjectInSP(SP, landmark.objDominatedId)) {
-            val objDominated = SP.find(_.obj.id == landmark.objDominatedId).get
+            val objDominated = SP.find(_.id == landmark.objDominatedId).get
 
             turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
 
@@ -397,7 +342,7 @@ object TurningPoint {
           }
 
           if (isObjectInSP(SP, l.objId) & !isLandmarkRightMidExist) {
-            val objDominated = objects.find(_.obj.id == landmark.objDominatedId).get
+            val objDominated = objects.find(_.id == landmark.objDominatedId).get
 
             turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
 
@@ -411,7 +356,7 @@ object TurningPoint {
 
     println("      Total Turning Points:")
     turningPointList.foreach(t => {
-      println("        Start: " + t.dStart + "\t End: " + t.dEnd + "\t SP: " + t.SP.map(_.obj.id).toString())
+      println("        Start: " + t.dStart + "\t End: " + t.dEnd + "\t SP: " + t.SP.map(_.id).toString())
     })
   }
 }

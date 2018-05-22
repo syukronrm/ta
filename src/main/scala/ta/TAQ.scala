@@ -5,18 +5,21 @@ import ta.grid.Node
 import ta.grid.Edge
 import ta.grid.Grid
 import ta.stream.{ExpiredObject, RawObject}
-import ta.geometry.{Point2d}
-
+import ta.geometry.Point2d
 import ta.algorithm.TheAlgorithm._
 
 import scala.collection.immutable.Set
+import scala.collection.parallel.ParSet
 
 case class RawNode(id: Int, x: Double, y: Double)
 case class RawEdge(id: Int, i: Int, j: Int, lengthMaybe: Option[Double])
 
 object TAQ {
   def main(args: Array[String]): Unit = {
-    val table_nodes = Set(
+    val cal_table_nodes = Import.readNode()
+    val cal_table_edges = Import.readEdge()
+
+    val table_nodes = ParSet(
       RawNode(1, 2, 1),
       RawNode(2, 19, 1),
       RawNode(3, 3, 3),
@@ -27,7 +30,7 @@ object TAQ {
       RawNode(8, 16, 12)
     )
 
-    val table_edges = Set(
+    val table_edges = ParSet(
       RawEdge(1, 1, 2, None),
       RawEdge(2, 1, 3, None),
       RawEdge(3, 2, 5, None),
@@ -49,16 +52,22 @@ object TAQ {
       RawObject(4, 3, 0.5, List(new Point2d(1, 3, .2, 4), new Point2d(3, 2, .3, 4), new Point2d(1, 4, .5, 4)))
     )
 
+    val t0 = System.nanoTime()
+
     var grid = new Grid
 
-    grid.addRawNodes(table_nodes)
-    grid.addRawEdges(table_edges)
+    grid.addRawNodes(cal_table_nodes)
+    println("done entry nodes")
+    grid.addRawEdges(cal_table_edges)
+    println("done entry edges")
 
-    streams.foldLeft(streams) {(acc, stream) => {
-      grid = TheAlgorithm(grid, stream)
-      acc
-    }}
+//    streams.foldLeft(streams) {(acc, stream) => {
+//      grid = TheAlgorithm(grid, stream)
+//      acc
+//    }}
 
-    println("Main!")
+    val t1 = System.nanoTime()
+
+    println("Time: " + ((t1 - t0) / 1000000) + " ms")
   }
 }

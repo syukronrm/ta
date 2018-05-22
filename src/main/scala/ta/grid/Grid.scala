@@ -10,6 +10,7 @@ import ta.{RawEdge, RawNode}
 import ta.geometry.{Point2d, Point3d}
 import TheTree._
 
+import scala.collection.parallel.ParSet
 import scala.math.{floor, round}
 
 case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
@@ -79,7 +80,7 @@ class Grid {
   }
 
   def addRawEdges(edges: Set[RawEdge]): Unit = {
-    edges.foreach(rawEdge => {
+    edges.par.foreach(rawEdge => {
       val nodei = getNode(rawEdge.i).get
       val g = getGridLocation(nodei)
 
@@ -106,7 +107,7 @@ class Grid {
 
     if (!isNodeExist(nodei)) {
       val edgeId = edge.id
-      throw new Error("addEdge $edgeId : Node $nodei tidak tersedia")
+      throw new Error("addEdge "+ edgeId +" : Node "+ nodei +" tidak tersedia")
     }
 
     this.edges = this.edges + edge
@@ -150,7 +151,7 @@ class Grid {
 
   /** Remove object from edge by object ID
     *
-    * @param objectId
+    * @param objectId object to be removed
     */
   def removeObjectFromEdge(objectId: Int): Unit = {
     val o = this.rawObjects.find(_.id == objectId).get
@@ -194,7 +195,7 @@ class Grid {
     * @return a GridLocation instance in form of gx: Int
     *         and gy: Int
     */
-  def getGridLocation(x: Int, y: Int): GridLocation = {
+  def getGridLocation(x: Double, y: Double): GridLocation = {
     val gx = math.floor(x / GRID_WIDTH).toInt
     val gy = math.floor(y / GRID_HEIGHT).toInt
 

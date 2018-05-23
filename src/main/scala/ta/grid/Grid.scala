@@ -80,7 +80,7 @@ class Grid {
   }
 
   def addRawEdges(edges: Set[RawEdge]): Unit = {
-    edges.par.foreach(rawEdge => {
+    edges.foreach(rawEdge => {
       val nodei = getNode(rawEdge.i).get
       val g = getGridLocation(nodei)
 
@@ -120,7 +120,14 @@ class Grid {
   }
 
   def addObjectToEdge(rawObject: RawObject): Unit = {
-    val edge = this.edges.find(_.id == rawObject.edgeId).get
+    val edgeMaybe = this.edges.find(_.id == rawObject.edgeId)
+
+    if (edgeMaybe.isEmpty) {
+      println(rawObject)
+    }
+
+    val edge = edgeMaybe.get
+
     val newObject = Object(rawObject.id, rawObject.edgeId, 100, isImpossible = false, edge.i, rawObject.points, 0, rawObject.position)
     addObjectToEdge(newObject)
   }

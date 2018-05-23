@@ -16,8 +16,8 @@ case class RawEdge(id: Int, i: Int, j: Int, lengthMaybe: Option[Double])
 
 object TAQ {
   def main(args: Array[String]): Unit = {
-    val cal_table_nodes = Import.readNode()
-    val cal_table_edges = Import.readEdge()
+    val cal_table_nodes = Dataset.readNode()
+    val cal_table_edges = Dataset.readEdge()
 
     val table_nodes = ParSet(
       RawNode(1, 2, 1),
@@ -61,10 +61,12 @@ object TAQ {
     grid.addRawEdges(cal_table_edges)
     println("done entry edges")
 
-//    streams.foldLeft(streams) {(acc, stream) => {
-//      grid = TheAlgorithm(grid, stream)
-//      acc
-//    }}
+    val streamsN = Dataset.generateObjects()
+
+    streamsN.foldLeft(streamsN) {(acc, stream) => {
+      grid = TheAlgorithm(grid, stream)
+      acc
+    }}
 
     val t1 = System.nanoTime()
 

@@ -51,7 +51,7 @@ object Dataset {
     Constants.GRID_HEIGHT = gridHeight
     Constants.GRID_WIDTH = gridWidth
 
-    Constants.D_EPSILON = ((rangeX + rangeY) / 2) * DISTANCE
+    Constants.D_EPSILON = ((rangeX + rangeY) / 2) * PERCENT_DISTANCE
 
     a
   }
@@ -79,7 +79,7 @@ object Dataset {
   def generateRandomUncertainData(objectId: Int): List[Point2d] = {
     val baseX = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
     val baseY = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
-    val prob: Double = 1.0/N_UNCERTAIN_DATA
+    val prob: Double = 1.0/N_POINTS
 
     var startX: Int = baseX - RANGE
     var endX: Int = baseX + RANGE
@@ -91,7 +91,7 @@ object Dataset {
     if (startY < MIN_DATASPACE) startY = MIN_DATASPACE
     if (endY > MAX_DATASPACE) endY = MAX_DATASPACE
 
-    (1 to N_UNCERTAIN_DATA).par.map(_ => {
+    (1 to N_POINTS).par.map(_ => {
       val x = startX + Random.nextInt(endX - startX + 1)
       val y = startY + Random.nextInt(endY - startY + 1)
 
@@ -99,25 +99,15 @@ object Dataset {
     }).toList
   }
 
-  val MAX_OBJECT = 1000
-  val MIN_DATASPACE = 0
-  val MAX_DATASPACE = 10000
-  val N_UNCERTAIN_DATA = 10
-  val RANGE = 250
-  val DISTANCE = 0.5
-  val TIME_EXPIRATION = 500
-  val MIN_EDGE_ID = 0
-  val MAX_EDGE_ID = 21692
-
   def generateObjects() = {
     var objectId = 0
     var expiredObjectId = 0
 
-    val a = (1 to MAX_OBJECT*2).map(_ => {
+    val a = (1 to N_OBJECTS*2).map(_ => {
       val edgeId = Math.floor(Math.random() * (MAX_EDGE_ID - MIN_EDGE_ID) + MIN_EDGE_ID).toInt
       val position = Math.random
 
-      if (objectId - expiredObjectId >= TIME_EXPIRATION || objectId >= MAX_OBJECT) {
+      if (objectId - expiredObjectId >= TIME_EXPIRATION || objectId >= N_OBJECTS) {
         expiredObjectId += 1
         ExpiredObject(expiredObjectId)
       } else {

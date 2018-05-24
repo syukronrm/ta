@@ -105,10 +105,10 @@ class Grid {
   def addEdge(edge: Edge): Unit = {
     val nodei: Int = edge.i
 
-    if (!isNodeExist(nodei)) {
-      val edgeId = edge.id
-      throw new Error("addEdge "+ edgeId +" : Node "+ nodei +" tidak tersedia")
-    }
+//    if (!isNodeExist(nodei)) {
+//      val edgeId = edge.id
+//      throw new Error("addEdge "+ edgeId +" : Node "+ nodei +" tidak tersedia")
+//    }
 
     this.edges = this.edges + edge
   }

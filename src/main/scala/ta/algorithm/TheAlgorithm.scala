@@ -40,6 +40,7 @@ object TheAlgorithm {
        // println("Deletion Object ID " + id)
         val _rawObject = grid.getRawObject(id).get
         grid.removeObjectFromEdge(id)
+        grid.removeObject(id)
         _rawObject
     }
 
@@ -275,12 +276,8 @@ object TheAlgorithm {
     })
 
     X.map(x => {
-      val skyPrx = SkyPrx(tree, X, x)
-      x.p * skyPrx
+      x.p * SkyPrx(tree, X, x)
     })
-      .map(a => {
-        a
-      })
       .sum
   }
 
@@ -334,9 +331,9 @@ object TheAlgorithm {
     //println("    PDRBox " + PDRBox.toString + " objects IDs = " + objectIds.toString)
     val objects = objectIds.map(id => {
       val a = node.objects.find(_.id == id)
-      if (a.isEmpty) {
+//      if (a.isEmpty) {
         //println(id)
-      }
+//      }
       a.get
     })
 

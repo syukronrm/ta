@@ -25,9 +25,14 @@ class Grid {
   def getObject(id: Int): Option[Object] = objects.find(_.id == id)
   def addObject(obj: Object): Unit = this.objects = this.objects + obj
   def removeObject(id: Int): Unit = {
-    val obj = this.objects.find(_.id == id).get
+    val objMaybe = this.objects.find(_.id == id)
 
-    this.objects = this.objects - obj
+    objMaybe match {
+      case Some(obj) =>
+        this.objects = this.objects - obj
+      case None =>
+        None
+    }
   }
 
   // raw object

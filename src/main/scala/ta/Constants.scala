@@ -9,7 +9,7 @@ object Constants {
   @inline final val DIMENSION = 2
 
   @inline val N_OBJECTS = 10000
-  @inline final val N_POINTS = 100
+  @inline final val N_POINTS = 10
 
   @inline val MIN_DATASPACE = 0
   @inline val MAX_DATASPACE = 10000

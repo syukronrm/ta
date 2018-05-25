@@ -128,7 +128,8 @@ object TheAlgorithm {
     }
 
     computeTurningPoint(tempGraph.graph)
-    updateGrid(grid, tempGraph.graph)
+    grid
+//    updateGrid(grid, tempGraph.graph)
   }
 
   def updateGrid(grid: Grid, graph: Graph[Node, WLkUnDiEdge]): Grid = {
@@ -199,7 +200,7 @@ object TheAlgorithm {
                    distance: Double,
                    rect: Rect2d): Node = {
 
-    val overlappedObjects = findPDROverlappedObjects(grid, node, rect)
+    val overlappedObjects = findPDROverlappedObjects(node, rect)
     //println("    overlapped objects:")
     val updatedOverlappedObjects = overlappedObjects.map(q => {
       val ddrRect = rect.getDDR.asInstanceOf[Rect2d]
@@ -303,7 +304,7 @@ object TheAlgorithm {
         .foldLeft(0.0)((acc, e) => acc + e.p)
   }
 
-  def findPDROverlappedObjects(grid: Grid, node: Node, rect: Rect2d): Set[Object] = {
+  def findPDROverlappedObjects(node: Node, rect: Rect2d): Set[Object] = {
     val tree = node.tree
     val PDRBox: Rect2d = rect.getPDR.asInstanceOf[Rect2d]
     val overlappedPoints: Array[Point2d] = new Array[Point2d](MAX_POINT)

@@ -21,24 +21,14 @@ class Grid {
   private var rawObjects: Set[RawObject] = Set()
   private var objects: Set[Object] = Set()
 
-  // objects
-  def getObject(id: Int): Option[Object] = objects.find(_.id == id)
-  def addObject(obj: Object): Unit = this.objects = this.objects + obj
-  def removeObject(id: Int): Unit = {
-    val objMaybe = this.objects.find(_.id == id)
-
-    objMaybe match {
-      case Some(obj) =>
-        this.objects = this.objects - obj
-      case None =>
-        None
-    }
-  }
-
   // raw object
   def getRawObject(objectId: Int): Option[RawObject] = rawObjects.find(_.id == objectId)
   def addRawObject(rawObject: RawObject): Unit =
     this.rawObjects = this.rawObjects + rawObject
+  def removeRawObject(objectId: Int): Unit = {
+    val rawObject = this.rawObjects.find(_.id = objectId).get
+    this.rawObjects = this.rawObjects - rawObject
+  }
 
   // node
   def addRawNodes(nodes: Set[RawNode]): Unit = {

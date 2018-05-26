@@ -80,7 +80,10 @@ object TAQ {
 
     val t0 = System.nanoTime()
 
+    val streamSize = streamsN.size
+
     streamsN.foldLeft(streamsN) {(acc, stream) => {
+      println(stream.getId + " from " + (Constants.N_OBJECTS + Constants.TIME_EXPIRATION))
       grid = TheAlgorithm(grid, stream)
       acc
     }}

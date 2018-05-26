@@ -40,7 +40,7 @@ object TheAlgorithm {
        // println("Deletion Object ID " + id)
         val _rawObject = grid.getRawObject(id).get
         grid.removeObjectFromEdge(id)
-        grid.removeObject(id)
+        grid.removeRawObject(id)
         _rawObject
     }
 

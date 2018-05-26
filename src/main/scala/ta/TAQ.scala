@@ -7,6 +7,7 @@ import ta.grid.Grid
 import ta.stream.{ExpiredObject, RawObject}
 import ta.geometry.Point2d
 import ta.algorithm.TheAlgorithm._
+import ta.Constants._
 
 import scala.collection.immutable.Set
 import scala.collection.parallel.ParSet
@@ -82,16 +83,26 @@ object TAQ {
 
     val streamSize = streamsN.size
 
+    var tStart = System.nanoTime()
+
     streamsN.foldLeft(streamsN) {(acc, stream) => {
+      if (stream.getId == N_OBJECTS) {
+        tStart = System.nanoTime()
+        println(tStart)
+      }
+
       println(stream.getId + " from " + (Constants.N_OBJECTS + Constants.TIME_EXPIRATION))
       grid = TheAlgorithm(grid, stream)
       acc
     }}
 
+    val tEnd = System.nanoTime()
+
     printMemoryUsage("algorithm")
 
     val t1 = System.nanoTime()
 
-    println("Time: " + ((t1 - t0) / 1000000) + " ms")
+    println("Time Total: " + ((t1 - t0) / 1000000) + " ms")
+    println("Time Stream " + N_STREAM + " Objects: " + ((tEnd - tStart) / 1000000) + " ms")
   }
 }

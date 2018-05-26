@@ -103,7 +103,7 @@ object Dataset {
     var objectId = 0
     var expiredObjectId = 0
 
-    val a = (1 to (N_OBJECTS + TIME_EXPIRATION)).map(_ => {
+    val a = (1 to (N_OBJECTS + (N_STREAM * 2))).map(_ => {
       val edgeId = Math.floor(Math.random() * (MAX_EDGE_ID - MIN_EDGE_ID) + MIN_EDGE_ID).toInt
       val position = Math.random
 

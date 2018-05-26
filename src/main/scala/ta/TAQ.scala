@@ -86,7 +86,7 @@ object TAQ {
     var tStart = System.nanoTime()
 
     streamsN.foldLeft(streamsN) {(acc, stream) => {
-      if (stream.getId == N_OBJECTS) {
+      if (stream.getId == N_OBJECTS && stream.isInstanceOf[RawObject]) {
         tStart = System.nanoTime()
         println(tStart)
       }

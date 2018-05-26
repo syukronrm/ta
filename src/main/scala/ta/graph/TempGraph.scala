@@ -26,7 +26,8 @@ class TempGraph {
   }
 
   def updateNode(graph: Graph[Node, WLkUnDiEdge], node: Node): Graph[Node, WLkUnDiEdge] = {
-    val deletedNode = graph.nodes.filter(_.toOuter.id == node.id).head
+//    val deletedNode = graph.nodes.filter(_.toOuter.id == node.id).head
+    val deletedNode = graph.nodes.toOuter.find(_.id == node.id).get
 
     val newEdges = graph.get(deletedNode).edges.map(e => {
       val nodeNeighbor = e.nodes.filterNot(n => n == deletedNode).head.toOuter

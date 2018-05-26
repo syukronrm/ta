@@ -21,19 +21,14 @@ class Grid {
   private var rawObjects: Set[RawObject] = Set()
   private var objects: Set[Object] = Set()
 
-  // objects
-  def getObject(id: Int): Option[Object] = objects.find(_.id == id)
-  def addObject(obj: Object): Unit = this.objects = this.objects + obj
-  def removeObject(id: Int): Unit = {
-    val obj = this.objects.find(_.id == id).get
-
-    this.objects = this.objects - obj
-  }
-
   // raw object
   def getRawObject(objectId: Int): Option[RawObject] = rawObjects.find(_.id == objectId)
   def addRawObject(rawObject: RawObject): Unit =
     this.rawObjects = this.rawObjects + rawObject
+  def removeRawObject(objectId: Int): Unit = {
+    val rawObject = this.rawObjects.find(_.id == objectId).get
+    this.rawObjects = this.rawObjects - rawObject
+  }
 
   // node
   def addRawNodes(nodes: Set[RawNode]): Unit = {
@@ -43,11 +38,11 @@ class Grid {
     }).foreach(addNode)
   }
 
-  def getNode(nodeId: Int): Option[Node] = this.nodes.find(_.id == nodeId)
+  def getNode(nodeId: Int): Option[Node] = this.nodes.par.find(_.id == nodeId)
   def addNode(node: Node): Unit = this.nodes = this.nodes + node
   def addNodes(nodes: Set[Node]): Unit = this.nodes = this.nodes ++ nodes
   def updateNode(node: Node): Unit = {
-    val currentNode = this.nodes.find(_.id == node.id).get
+    val currentNode = this.nodes.par.find(_.id == node.id).get
     currentNode.tree = node.tree
     currentNode.objects = node.objects
   }
@@ -66,17 +61,17 @@ class Grid {
   def isNodeExist(nodeId: Int): Boolean = this.nodes.exists(_.id == nodeId)
 
   /** Find all nodes inside GridLocation */
-  def getNodes(g: GridLocation): Set[Node] = {
-    this.nodes.filter((n: Node) => {
+  def getNodes(g: GridLocation): List[Node] = {
+    this.nodes.par.filter((n: Node) => {
       (round(floor(n.x / GRID_WIDTH)) == g.x) & (round(floor(n.y / GRID_HEIGHT)) == g.y)
-    })
+    }).toList
   }
 
   /** Find all nodes connected to edges */
-  def getNodes(edges: Set[Edge]): Set[Node] = {
+  def getNodes(edges: List[Edge]): List[Node] = {
     val nodeIds = edges.flatMap((e: Edge) => Set(e.i, e.j))
 
-    this.nodes.filter((n: Node) => nodeIds.contains(n.id))
+    this.nodes.par.filter((n: Node) => nodeIds.contains(n.id)).toList
   }
 
   def addRawEdges(edges: Set[RawEdge]): Unit = {
@@ -100,15 +95,15 @@ class Grid {
   }
 
   // edge
-  def getEdge(edgeId: Int): Option[Edge] = this.edges.find(_.id == edgeId)
+  def getEdge(edgeId: Int): Option[Edge] = this.edges.par.find(_.id == edgeId)
 
   def addEdge(edge: Edge): Unit = {
     val nodei: Int = edge.i
 
-    if (!isNodeExist(nodei)) {
-      val edgeId = edge.id
-      throw new Error("addEdge "+ edgeId +" : Node "+ nodei +" tidak tersedia")
-    }
+//    if (!isNodeExist(nodei)) {
+//      val edgeId = edge.id
+//      throw new Error("addEdge "+ edgeId +" : Node "+ nodei +" tidak tersedia")
+//    }
 
     this.edges = this.edges + edge
   }
@@ -120,7 +115,7 @@ class Grid {
   }
 
   def addObjectToEdge(rawObject: RawObject): Unit = {
-    val edgeMaybe = this.edges.find(_.id == rawObject.edgeId)
+    val edgeMaybe = this.edges.par.find(_.id == rawObject.edgeId)
 
     if (edgeMaybe.isEmpty) {
       println(rawObject)
@@ -138,7 +133,7 @@ class Grid {
     * @param obj object to be inserted
     */
   def addObjectToEdge(obj: Object): Unit = {
-    val e = this.edges.find(_.id == obj.edgeId).get
+    val e = this.edges.par.find(_.id == obj.edgeId).get
     val newEdge = Edge(e.id, e.i, e.j, e.length, e.g, e.objects + obj)
 
     this.edges = this.edges - e + newEdge
@@ -150,7 +145,7 @@ class Grid {
     * @param obj object should be exist
     */
   def removeObjectFromEdge(obj: Object): Unit = {
-    val e = this.edges.find(_.id == obj.edgeId).get
+    val e = this.edges.par.find(_.id == obj.edgeId).get
 
     this.edges = this.edges - e + Edge(e.id, e.i, e.j, e.length, e.g, e.objects - obj)
   }
@@ -162,7 +157,7 @@ class Grid {
     */
   def removeObjectFromEdge(objectId: Int): Unit = {
     val o = this.rawObjects.find(_.id == objectId).get
-    val e = this.edges.find(_.id == o.edgeId).get
+    val e = this.edges.par.find(_.id == o.edgeId).get
     val deletedObject = e.objects.find(_.id == objectId).get
 
     this.edges = this.edges - e + Edge(e.id, e.i, e.j, e.length, e.g, e.objects - deletedObject)
@@ -173,12 +168,12 @@ class Grid {
     *  @param nodes list of nodes
     *  @return Edge instance, all edges connected to nodes
     */
-  def getEdges(nodes: Set[Node]): Set[Edge] = {
+  def getEdges(nodes: List[Node]): List[Edge] = {
     val nodeIds = nodes.map((n: Node) => n.id)
 
-    this.edges.filter((e: Edge) => {
+    this.edges.par.filter((e: Edge) => {
       nodeIds.contains(e.i) | nodeIds.contains(e.j)
-    })
+    }).toList
   }
 
   /** Create new GridLocation object based on x
@@ -217,8 +212,8 @@ class Grid {
   def getDataGrid(g: GridLocation): EdgesNodes = {
     val _nodes = getNodes(g)
     val edges = getEdges(_nodes)
-    val nodes = getNodes(edges)
+    val nodes = getNodes(edges).toSet
 
-    EdgesNodes(edges, nodes)
+    EdgesNodes(edges.toSet, nodes)
   }
 }

@@ -60,14 +60,18 @@ object TheAlgorithm {
     addedGrid += gridNodeI
     //println("  importing data grid node " + nodei.id)
     val EdgesNodes(edgesNodeI, nodesNodeI) = grid.getDataGrid(gridNodeI)
+    println("add Edges " + gridNodeI.toString)
     tempGraph.addEdges(nodesNodeI, edgesNodeI)
+    addedGrid += gridNodeI
     //println("    nodes " + nodesNodeI.size)
     //println("    edges " + edgesNodeI.size)
 
     //println("  importing data grid node " + nodej.id)
     if (!addedGrid.contains(gridNodeJ)) {
       val EdgesNodes(edgesNodeJ, nodesNodeJ) = grid.getDataGrid(gridNodeJ)
+      println("add Edges " + gridNodeJ.toString)
       tempGraph.addEdges(nodesNodeJ, edgesNodeJ)
+      addedGrid += gridNodeJ
     }
 
     //println("    nodes " + nodesNodeJ.size)
@@ -122,8 +126,10 @@ object TheAlgorithm {
           if (!visitedNodes.contains(n.id)) {
             val gridLocation = grid.getGridLocation(n)
             if (!addedGrid.contains(gridLocation)) {
+              println("add Edges " + gridLocation.toString)
               val EdgesNodes(edgesN, nodesN) = grid.getDataGrid(gridLocation)
               tempGraph.addEdges(nodesN, edgesN)
+              addedGrid += gridLocation
               //println("        add grid (" + gridLocation.x + ", " + gridLocation.y +")")
             }
 

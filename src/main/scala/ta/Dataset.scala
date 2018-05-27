@@ -5,7 +5,7 @@ import ta.geometry.Point2d
 import ta.grid.{Edge, GridLocation, Node}
 import ta.Constants._
 import ta.grid.Object
-import ta.stream.{ExpiredObject, RawObject}
+import ta.stream.{ExpiredObject, RawObject, Stream}
 
 import scala.collection.parallel.immutable.ParSeq
 import scala.util.Random
@@ -99,7 +99,7 @@ object Dataset {
     }).toList
   }
 
-  def generateObjects() = {
+  def generateObjects(): List[Stream] = {
     var objectId = 0
     var expiredObjectId = 0
 
@@ -107,14 +107,14 @@ object Dataset {
       val edgeId = Math.floor(Math.random() * (MAX_EDGE_ID - MIN_EDGE_ID) + MIN_EDGE_ID).toInt
       val position = Math.random
 
-      if (objectId - expiredObjectId >= TIME_EXPIRATION || objectId >= N_OBJECTS) {
+      if (objectId - expiredObjectId >= TIME_EXPIRATION) {
         expiredObjectId += 1
         ExpiredObject(expiredObjectId)
       } else {
         objectId += 1
         RawObject(objectId, edgeId, position, generateRandomUncertainData(objectId))
       }
-    })
+    }).toList
 
     a
   }

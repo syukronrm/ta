@@ -1,6 +1,5 @@
 package ta.grid
 
-
 import collection.spatial.{HyperPoint, RTree, RectBuilder}
 
 import scala.collection.immutable.Set
@@ -9,13 +8,14 @@ import ta.Constants._
 import ta.{RawEdge, RawNode}
 import ta.geometry.{Point2d, Point3d}
 import TheTree._
+import com.rits.cloning.Cloner
 
 import scala.collection.parallel.ParSet
 import scala.math.{floor, round}
 
 case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
 
-class Grid {
+class Grid extends Cloneable {
   private var edges: Set[Edge] = Set()
   private var nodes: Set[Node] = Set()
   private var rawObjects: Set[RawObject] = Set()
@@ -75,11 +75,11 @@ class Grid {
   }
 
   def addRawEdges(edges: Set[RawEdge]): Unit = {
-    edges.foreach(rawEdge => {
+    val es = edges.par.map(rawEdge => {
       val nodei = getNode(rawEdge.i).get
       val g = getGridLocation(nodei)
 
-      val newEdge = rawEdge.lengthMaybe match {
+      rawEdge.lengthMaybe match {
         case Some(length) =>
           Edge(rawEdge.id, rawEdge.i, rawEdge.j, length, g, Set())
         case None =>
@@ -89,9 +89,9 @@ class Grid {
           val length = Math.sqrt(dx*dx + dy*dy)
           Edge(rawEdge.id, rawEdge.i, rawEdge.j, length, g, Set())
       }
+    }).toList.toSet
 
-      addEdge(newEdge)
-    })
+    addEdges(es)
   }
 
   // edge
@@ -215,5 +215,10 @@ class Grid {
     val nodes = getNodes(edges).toSet
 
     EdgesNodes(edges.toSet, nodes)
+  }
+
+  def cloneGrid(): Grid = {
+    val cloner = new Cloner()
+    cloner.deepClone(this)
   }
 }

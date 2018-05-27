@@ -1,6 +1,7 @@
 package ta
 
 import collection.spatial.{HyperPoint, RTree, RectBuilder}
+import org.openjdk.jmh.annotations.Setup
 import ta.grid.Node
 import ta.grid.Edge
 import ta.grid.Grid
@@ -104,5 +105,79 @@ object TAQ {
 
     println("Time Total: " + ((t1 - t0) / 1000000) + " ms")
     println("Time Stream " + N_STREAM + " Objects: " + ((tEnd - tStart) / 1000000) + " ms")
+  }
+}
+
+import org.openjdk.jmh.annotations.Benchmark
+import org.openjdk.jmh.annotations.Scope
+import org.openjdk.jmh.annotations.State
+import org.openjdk.jmh.annotations.Warmup
+import org.openjdk.jmh.annotations.Measurement
+import org.openjdk.jmh.annotations.OperationsPerInvocation
+import org.openjdk.jmh.annotations.TearDown
+import org.openjdk.jmh.annotations.Level
+
+@State(Scope.Benchmark)
+object BenchmarkStreamState {
+  val cal_table_nodes: Set[RawNode] = Dataset.readNode()
+  val cal_table_edges: Set[RawEdge] = Dataset.readEdge()
+  val streamsN: List[stream.Stream] = Dataset.generateObjects()
+}
+
+@State(Scope.Thread)
+class BenchmarkStream {
+  import BenchmarkStreamState._
+
+  val table_edges: Set[RawEdge] = cal_table_edges
+  val table_nodes: Set[RawNode] = cal_table_nodes
+  var index = 0
+
+  var gridFixed: Grid = _
+  var grid: Grid = _
+
+  def runInitial(): Grid = {
+    var _grid = new Grid
+
+    _grid.addRawNodes(table_nodes)
+    _grid.addRawEdges(table_edges)
+
+    (0 until N_OBJECTS).foreach { i =>
+      println(i)
+      val stream = streamsN.lift(i).get
+      _grid = TheAlgorithm(_grid, stream)
+    }
+
+    _grid
+  }
+
+  @Setup
+  def setup(): Unit = {
+    gridFixed = runInitial()
+
+    grid = gridFixed.cloneGrid()
+    index = N_OBJECTS
+  }
+
+  @TearDown(Level.Iteration)
+  def tear(): Unit = {
+    grid = gridFixed.cloneGrid()
+    index = N_OBJECTS
+  }
+
+
+  @Benchmark
+  def doStreaming(): Unit = {
+    val stream = streamsN.lift(index).get
+    index += 1
+
+    if (stream.isInstanceOf[RawObject]) {
+      println("Index "+ index +" Stream RawObject " + stream.getId)
+    }
+
+    if (stream.isInstanceOf[ExpiredObject]) {
+      println("Index "+ index +" Stream Expire " + stream.getId)
+    }
+    
+    grid = TheAlgorithm(grid, stream)
   }
 }

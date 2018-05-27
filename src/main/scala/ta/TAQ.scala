@@ -1,5 +1,6 @@
 package ta
 
+import java.util.concurrent.TimeUnit
 import collection.spatial.{HyperPoint, RTree, RectBuilder}
 import org.openjdk.jmh.annotations.Setup
 import ta.grid.Node
@@ -119,6 +120,7 @@ import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.annotations.Level
 import org.openjdk.jmh.annotations.Param
 import org.openjdk.jmh.annotations.Mode
+import org.openjdk.jmh.annotations.Timeout
 
 @State(Scope.Benchmark)
 object BenchmarkStreamState {
@@ -148,7 +150,7 @@ class BenchmarkStream {
     _grid.addRawEdges(table_edges)
 
     (0 until N_OBJECTS).foreach { i =>
-      //println(i)
+      println(i)
       val stream = streamsN.lift(i).get
       _grid = TheAlgorithm(_grid, stream)
     }
@@ -156,7 +158,7 @@ class BenchmarkStream {
     _grid
   }
 
-  @Param(Array("200", "600", "1000", "1400", "1800"))
+  @Param(Array("7000"))
   var nObjects: Int = _
 
   @Setup
@@ -178,17 +180,18 @@ class BenchmarkStream {
 
 
   @Benchmark
-  @BenchmarkMode(Mode.AverageTime)
+  @BenchmarkMode(Array(Mode.AverageTime))
+  @Timeout(time = 100, timeUnit = TimeUnit.MINUTES)
   def doStreaming(): Unit = {
     val stream = streamsN.lift(index).get
     index += 1
 
     if (stream.isInstanceOf[RawObject]) {
-      //println("Index "+ index +" Stream RawObject " + stream.getId)
+      println("Index "+ index +" Stream RawObject " + stream.getId)
     }
 
     if (stream.isInstanceOf[ExpiredObject]) {
-      //println("Index "+ index +" Stream Expire " + stream.getId)
+      println("Index "+ index +" Stream Expire " + stream.getId)
     }
     
     grid = TheAlgorithm(grid, stream)

@@ -35,7 +35,7 @@ object TAQ {
     val cal_table_nodes = Dataset.readNode()
     val cal_table_edges = Dataset.readEdge()
 
-//    val table_nodes = ParSet(
+//    val table_nodes = Set(
 //      RawNode(1, 2, 1),
 //      RawNode(2, 19, 1),
 //      RawNode(3, 3, 3),
@@ -46,7 +46,7 @@ object TAQ {
 //      RawNode(8, 16, 12)
 //    )
 
-//    val table_edges = ParSet(
+//    val table_edges = Set(
 //      RawEdge(1, 1, 2, None),
 //      RawEdge(2, 1, 3, None),
 //      RawEdge(3, 2, 5, None),
@@ -181,7 +181,7 @@ class BenchmarkStream {
 
   @Benchmark
   @BenchmarkMode(Array(Mode.AverageTime))
-  @Timeout(time = 100, timeUnit = TimeUnit.MINUTES)
+  @Timeout(time = 120, timeUnit = TimeUnit.MINUTES)
   def doStreaming(): Unit = {
     val stream = streamsN.lift(index).get
     index += 1

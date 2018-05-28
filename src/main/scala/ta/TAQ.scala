@@ -178,7 +178,7 @@ class BenchmarkStream {
 
 
   @Benchmark
-  @BenchmarkMode(Mode.AverageTime)
+  @BenchmarkMode(Array(Mode.AverageTime))
   def doStreaming(): Unit = {
     val stream = streamsN.lift(index).get
     index += 1

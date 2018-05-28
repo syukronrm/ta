@@ -18,6 +18,9 @@ import scala.collection.mutable
 
 case class NodeQueue(nodeId: Int, distance: Double)
 
+case class NodeInsert(nodeId: Int, distance: Double)
+case class NodeDelete(nodeId: Int, distance: Double)
+
 object TheAlgorithm {
   def TheAlgorithm(grid: Grid, stream: Stream): Grid = {
     //println("====================================WOW===============================")
@@ -27,7 +30,6 @@ object TheAlgorithm {
     //println(GRID_WIDTH)
     //println(GRID_HEIGHT)
 
-    var updatedNodes: Set[Int] = Set()
     var visitedNodes: Set[Int] = Set()
 
     val rawObject = stream match {
@@ -95,28 +97,21 @@ object TheAlgorithm {
       visitedNodes = visitedNodes + nodej.id
     }
 
+    var nodesInsert: Set[NodeInsert] = Set()
+    var nodesDelete: Set[NodeDelete] = Set()
+
     while (Q.nonEmpty) {
       Q = Q.sortBy(_.distance)
       val NodeQueue(currentNodeId, distance) = Q.dequeue()
       //println("  dequeue node " + currentNodeId + " with distance " + distance)
 
       if (distance < D_EPSILON) {
-        val currentNode = tempGraph.getNode(currentNodeId).get
-        val updatedNode = stream match {
+        stream match {
           case _: RawObject =>
-            val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
-            //println("    distance node " + currentNodeId + ": " + distance)
-            //println("    insert object " + rawObject.id + " to node " + currentNodeId)
-            insertToNode(grid, currentNode, rawObject, distance, rect)
+            nodesInsert += NodeInsert(currentNodeId, distance)
           case ExpiredObject(objectId) =>
-            //println("    delete object " + rawObject + " from node " + currentNodeId)
-            deleteFromNode(currentNode, objectId, rect)
+            nodesDelete += NodeDelete(currentNodeId, distance)
         }
-
-        tempGraph.updateNode(updatedNode)
-        grid.updateNode(updatedNode)
-
-        updatedNodes += updatedNode.id
 
         //println("    node neighbor ")
         val neighborNodes = tempGraph.getNeighborNodes(currentNodeId)
@@ -144,7 +139,24 @@ object TheAlgorithm {
       }
     }
 
+    nodesInsert.par.map { n =>
+      val currentNode = tempGraph.getNode(n.nodeId).get
+      insertToNode(grid, currentNode, rawObject, n.distance, rect)
+    }.toList.foreach { n =>
+      tempGraph.updateNode(n)
+      grid.updateNode(n)
+    }
+
+    nodesDelete.par.map { n =>
+      val currentNode = tempGraph.getNode(n.nodeId).get
+      deleteFromNode(currentNode, rawObject.id, rect)
+    }.toList.foreach { n =>
+      tempGraph.updateNode(n)
+      grid.updateNode(n)
+    }
+
     computeTurningPoint(tempGraph.graph)
+    println(tempGraph.graph.nodes.size)
     grid
 //    updateGrid(grid, tempGraph.graph)
   }

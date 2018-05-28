@@ -22,11 +22,11 @@ class Grid extends Cloneable {
   private var objects: Set[Object] = Set()
 
   // raw object
-  def getRawObject(objectId: Int): Option[RawObject] = rawObjects.find(_.id == objectId)
+  def getRawObject(objectId: Int): Option[RawObject] = rawObjects.par.find(_.id == objectId)
   def addRawObject(rawObject: RawObject): Unit =
     this.rawObjects = this.rawObjects + rawObject
   def removeRawObject(objectId: Int): Unit = {
-    val rawObject = this.rawObjects.find(_.id == objectId).get
+    val rawObject = this.rawObjects.par.find(_.id == objectId).get
     this.rawObjects = this.rawObjects - rawObject
   }
 
@@ -156,7 +156,7 @@ class Grid extends Cloneable {
     * @param objectId object to be removed
     */
   def removeObjectFromEdge(objectId: Int): Unit = {
-    val o = this.rawObjects.find(_.id == objectId).get
+    val o = this.rawObjects.par.find(_.id == objectId).get
     val e = this.edges.par.find(_.id == o.edgeId).get
     val deletedObject = e.objects.find(_.id == objectId).get
 

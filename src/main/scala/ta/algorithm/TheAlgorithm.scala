@@ -27,7 +27,7 @@ object TheAlgorithm {
     //println(GRID_WIDTH)
     //println(GRID_HEIGHT)
 
-    var updatedNodes: Set[Int] = Set()
+    //var updatedNodes: Set[Int] = Set()
     var visitedNodes: Set[Int] = Set()
 
     val rawObject = stream match {
@@ -80,20 +80,14 @@ object TheAlgorithm {
     //println("  add grid (" + gridNodeI.x + ", " + gridNodeI.y +")")
     //println("  add grid (" + gridNodeJ.x + ", " + gridNodeJ.y +")")
 
-    val distanceNodeI = tempGraph.calculateDistance(rawObject, nodei.id)
-    //println("  distance node " + nodei.id + ": " + distanceNodeI)
-    val distanceNodeJ = tempGraph.calculateDistance(rawObject, nodej.id)
-    //println("  distance node " + nodej.id + ": " + distanceNodeJ)
+    val e = tempGraph.getEdge(rawObject.edgeId)
+    var distanceNodeI = e.length * rawObject.position
+    var distanceNodeJ = e.length * (1 - rawObject.position)
 
-    if (distanceNodeI < distanceNodeJ) {
-      //println("  enqueue node " + nodei.id)
-      Q.enqueue(NodeQueue(nodei.id, distanceNodeI))
-      visitedNodes = visitedNodes + nodei.id
-    } else {
-      //println("  enqueue node " + nodej.id)
-      Q.enqueue(NodeQueue(nodej.id, distanceNodeJ))
-      visitedNodes = visitedNodes + nodej.id
-    }
+    Q.enqueue(NodeQueue(nodei.id, distanceNodeI))
+    visitedNodes = visitedNodes + nodei.id
+    Q.enqueue(NodeQueue(nodej.id, distanceNodeJ))
+    visitedNodes = visitedNodes + nodej.id
 
     while (Q.nonEmpty) {
       Q = Q.sortBy(_.distance)
@@ -104,7 +98,7 @@ object TheAlgorithm {
         val currentNode = tempGraph.getNode(currentNodeId).get
         val updatedNode = stream match {
           case _: RawObject =>
-            val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
+            //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
             //println("    distance node " + currentNodeId + ": " + distance)
             //println("    insert object " + rawObject.id + " to node " + currentNodeId)
             insertToNode(grid, currentNode, rawObject, distance, rect)
@@ -116,12 +110,13 @@ object TheAlgorithm {
         tempGraph.updateNode(updatedNode)
         grid.updateNode(updatedNode)
 
-        updatedNodes += updatedNode.id
+        //updatedNodes += updatedNode.id
 
         //println("    node neighbor ")
-        val neighborNodes = tempGraph.getNeighborNodes(currentNodeId)
+        val neighborNodesEdges = tempGraph.getNeighborNodesEdges(currentNodeId)
+        //println("neighbors " + neighborNodesEdges.toString())
 
-        neighborNodes.foreach(n => {
+        neighborNodesEdges.keys.foreach(n => {
           //println("      node " + n.id)
           if (!visitedNodes.contains(n.id)) {
             val gridLocation = grid.getGridLocation(n)
@@ -133,7 +128,8 @@ object TheAlgorithm {
               //println("        add grid (" + gridLocation.x + ", " + gridLocation.y +")")
             }
 
-            val distanceUnvisitedNode = tempGraph.calculateDistance(rawObject, n.id)
+            //val distanceUnvisitedNode = tempGraph.calculateDistance(rawObject, n.id)
+            val distanceUnvisitedNode = distance + neighborNodesEdges(n)
             //println("        distance node " + n.id + ": " + distanceUnvisitedNode)
             Q.enqueue(NodeQueue(n.id, distanceUnvisitedNode))
 

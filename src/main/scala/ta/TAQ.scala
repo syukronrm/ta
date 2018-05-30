@@ -158,7 +158,7 @@ class BenchmarkStream {
     _grid
   }
 
-  @Param(Array("7000"))
+  @Param(Array("1000"))
   var nObjects: Int = _
 
   @Setup

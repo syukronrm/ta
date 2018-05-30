@@ -57,32 +57,34 @@ class TempGraph {
   }.label.asInstanceOf[Edge]
 
   def addEdges(nodes: Set[Node], edges: Set[Edge]): Unit = {
-    val result = edges.foldLeft(graph)((acc, e) => {
-      val nodei = nodes.find((n: Node) => n.id == e.i).get
-      val nodej = nodes.find((n: Node) => n.id == e.j).get
+    this.synchronized {
+      val result = edges.foldLeft(graph)((acc, e) => {
+        val nodei = nodes.find((n: Node) => n.id == e.i).get
+        val nodej = nodes.find((n: Node) => n.id == e.j).get
 
-      val existingNodei = graph.nodes.toOuter.find(_.id == nodei.id)
-      val existingNodej = graph.nodes.toOuter.find(_.id == nodej.id)
+        val existingNodei = graph.nodes.toOuter.find(_.id == nodei.id)
+        val existingNodej = graph.nodes.toOuter.find(_.id == nodej.id)
 
-      val updatedGraphWithNodei = existingNodei match {
-        case None =>
-          acc
-        case _ =>
-          val a = updateNode(acc, existingNodei.get)
-          a
-      }
+        val updatedGraphWithNodei = existingNodei match {
+          case None =>
+            acc
+          case _ =>
+            val a = updateNode(acc, existingNodei.get)
+            a
+        }
 
-      val updatedGraphWithNodej = existingNodej match {
-        case None =>
-          updatedGraphWithNodei
-        case _ =>
-          updateNode(updatedGraphWithNodei, existingNodej.get)
-      }
+        val updatedGraphWithNodej = existingNodej match {
+          case None =>
+            updatedGraphWithNodei
+          case _ =>
+            updateNode(updatedGraphWithNodei, existingNodej.get)
+        }
 
-      addEdge(updatedGraphWithNodej, nodei, nodej, e)
-    })
+        addEdge(updatedGraphWithNodej, nodei, nodej, e)
+      })
 
-    graph = result
+      graph = result
+    }
   }
 
   def n(g: Graph[Node, WLkUnDiEdge], outer: Node): g.NodeT = g get outer

@@ -15,14 +15,16 @@ class TempGraph {
   var graph: Graph[Node, WLkUnDiEdge] = Graph()
 
   def getNeighborNodesEdges(nodeId: Int): Map[Node, Double] = {
-    val node = this.graph.nodes.toOuter.find(_.id == nodeId).get
-    this.graph.get(node).edges.map { e =>
-      if (e._1.toOuter == node) {
-        e._2.toOuter -> e.weight
-      } else {
-        e._1.toOuter -> e.weight
-      }
-    }.toMap
+    this.synchronized {
+      val node = this.graph.nodes.toOuter.find(_.id == nodeId).get
+      this.graph.get(node).edges.map { e =>
+        if (e._1.toOuter == node) {
+          e._2.toOuter -> e.weight
+        } else {
+          e._1.toOuter -> e.weight
+        }
+      }.toMap
+    }
   }
 
   def addEdge(graph: Graph[Node, WLkUnDiEdge], nodei: Node, nodej: Node, edge: Edge): Graph[Node, WLkUnDiEdge] = {
@@ -45,7 +47,9 @@ class TempGraph {
   }
 
   def updateNode(node: Node): Unit = {
-    this.graph = updateNode(graph, node)
+    this.synchronized {
+      this.graph = updateNode(graph, node)
+    }
   }
 
   def getEdge(edgeId: Int): Edge = {

@@ -356,9 +356,9 @@ object TurningPoint {
 
     turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
 
-    //println("      Total Turning Points:")
+    println("      Total Turning Points " + edge.id + ":")
     turningPointList.foreach(t => {
-      //println("        Start: " + t.dStart + "\t End: " + t.dEnd + "\t SP: " + t.SP.map(_.id).toString())
+      println("        Start: " + t.dStart + "\t End: " + t.dEnd + "\t SP: " + t.SP.map(_.id).toString())
     })
   }
 }

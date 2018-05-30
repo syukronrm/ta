@@ -19,7 +19,6 @@ class Grid extends Cloneable {
   private var edges: Set[Edge] = Set()
   private var nodes: Set[Node] = Set()
   private var rawObjects: Set[RawObject] = Set()
-  private var objects: Set[Object] = Set()
 
   // raw object
   def getRawObject(objectId: Int): Option[RawObject] = rawObjects.par.find(_.id == objectId)
@@ -42,9 +41,11 @@ class Grid extends Cloneable {
   def addNode(node: Node): Unit = this.nodes = this.nodes + node
   def addNodes(nodes: Set[Node]): Unit = this.nodes = this.nodes ++ nodes
   def updateNode(node: Node): Unit = {
-    val currentNode = this.nodes.par.find(_.id == node.id).get
-    currentNode.tree = node.tree
-    currentNode.objects = node.objects
+    this.synchronized {
+      val currentNode = this.nodes.par.find(_.id == node.id).get
+      currentNode.tree = node.tree
+      currentNode.objects = node.objects
+    }
   }
 
   def updateNodes(nodes: Set[Node]): Unit = {

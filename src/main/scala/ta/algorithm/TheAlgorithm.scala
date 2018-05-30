@@ -15,6 +15,11 @@ import ta.algorithm.TurningPoint._
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
 import scala.collection.mutable
+import scala.concurrent.Future
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration.Duration
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 case class NodeQueue(nodeId: Int, distance: Double)
 
@@ -89,6 +94,8 @@ object TheAlgorithm {
     Q.enqueue(NodeQueue(nodej.id, distanceNodeJ))
     visitedNodes = visitedNodes + nodej.id
 
+    var futures: Set[Future[Unit]] = Set()
+
     while (Q.nonEmpty) {
       Q = Q.sortBy(_.distance)
       val NodeQueue(currentNodeId, distance) = Q.dequeue()
@@ -96,20 +103,24 @@ object TheAlgorithm {
 
       if (distance < D_EPSILON) {
         val currentNode = tempGraph.getNode(currentNodeId).get
-        val updatedNode = stream match {
-          case _: RawObject =>
-            //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
-            //println("    distance node " + currentNodeId + ": " + distance)
-            //println("    insert object " + rawObject.id + " to node " + currentNodeId)
-            insertToNode(grid, currentNode, rawObject, distance, rect)
-          case ExpiredObject(objectId) =>
-            //println("    delete object " + rawObject + " from node " + currentNodeId)
-            deleteFromNode(currentNode, objectId, rect)
+
+        val fut = Future {
+          val updatedNode = stream match {
+            case _: RawObject =>
+              //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
+              //println("    distance node " + currentNodeId + ": " + distance)
+              //println("    insert object " + rawObject.id + " to node " + currentNodeId)
+              insertToNode(grid, currentNode, rawObject, distance, rect)
+            case ExpiredObject(objectId) =>
+              //println("    delete object " + rawObject + " from node " + currentNodeId)
+              deleteFromNode(currentNode, objectId, rect)
+          }
+
+          tempGraph.updateNode(updatedNode)
+          grid.updateNode(updatedNode)
         }
 
-        tempGraph.updateNode(updatedNode)
-        grid.updateNode(updatedNode)
-
+        futures += fut
         //updatedNodes += updatedNode.id
 
         //println("    node neighbor ")
@@ -140,6 +151,7 @@ object TheAlgorithm {
       }
     }
 
+    Await.result(Future.sequence(futures), Duration.Inf)
     computeTurningPoint(tempGraph.graph)
     grid
 //    updateGrid(grid, tempGraph.graph)

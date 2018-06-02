@@ -1,4 +1,5 @@
 target
+jmh-result.json
 *.class
 *.iml
 *.ipr

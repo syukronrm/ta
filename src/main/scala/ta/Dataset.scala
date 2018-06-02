@@ -11,7 +11,26 @@ import scala.collection.parallel.immutable.ParSeq
 import scala.util.Random
 
 object Dataset {
-  def readNode(): Set[RawNode] ={
+  var nodes: List[RawNode] = List()
+  var edges: List[RawEdge] = List()
+
+  def addNode(rawNode: RawNode): Unit = {
+    synchronized {
+      this.nodes = this.nodes :+ rawNode
+    }
+  }
+
+  def addEdge(rawEdge: RawEdge): Unit = {
+    synchronized {
+      this.edges = this.edges :+ rawEdge
+    }
+  }
+
+  def findNode(nodeId: Int): Option[RawNode] = {
+    this.nodes.find(_.id == nodeId)
+  }
+
+  def readNode(): List[RawNode] ={
     val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
 
     var minX = 20000.0
@@ -40,10 +59,43 @@ object Dataset {
       RawNode(nodeId, lon, lat)
     }
 
-    val a = nodes.toSet
+    val a = nodes.toList
 
     var rangeX = (maxX - minX) / N_GRID_CELL
     var rangeY = (maxY - minY) / N_GRID_CELL
+
+    var gridHeight = rangeY / N_GRID_CELL
+    var gridWidth = rangeX / N_GRID_CELL
+
+    Constants.GRID_HEIGHT = gridHeight
+    Constants.GRID_WIDTH = gridWidth
+
+    Constants.D_EPSILON = ((rangeX + rangeY) / 2) * PERCENT_DISTANCE
+
+    a
+  }
+
+  def readPartialNode(): List[RawNode] = {
+    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
+
+    lines.foreach { l =>
+      val lineArray = l.split(' ')
+      val nodeId = lineArray(0).toInt
+      val lon = lineArray(1).toDouble
+      val lat = lineArray(2).toDouble
+
+      if (lon > -120 & lat > 37) {
+        this.addNode(RawNode(nodeId, lon, lat))
+      }
+    }
+
+    //println(this.nodes)
+    val a = nodes
+
+    var rangeX = (-114 - (-120)).toDouble / N_GRID_CELL
+    var rangeY = (37 - 32).toDouble / N_GRID_CELL
+
+    println("rangeX " + rangeX + "rangeY " + rangeY)
 
     var gridHeight = rangeY / N_GRID_CELL
     var gridWidth = rangeX / N_GRID_CELL
@@ -63,7 +115,7 @@ object Dataset {
     GridLocation(gx, gy)
   }
 
-  def readEdge(): Set[RawEdge] = {
+  def readEdge(): List[RawEdge] = {
     val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines()
     lines.map { l =>
       val lineArray = l.split(' ')
@@ -73,7 +125,28 @@ object Dataset {
       val distance = lineArray(3).toDouble
 
       RawEdge(edgeId, node1, node2, Some(distance))
-    }.toSet
+    }.toList
+  }
+
+  def readEdgePartial(): List[RawEdge] = {
+    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines().toSet
+
+    lines.par.foreach { l =>
+      val lineArray = l.split(' ')
+      val edgeId = lineArray(0).toInt
+      val node1 = lineArray(1).toInt
+      val node2 = lineArray(2).toInt
+      val distance = lineArray(3).toDouble
+
+      val node1Maybe = findNode(node1)
+      val node2Maybe = findNode(node2)
+
+      if (node1Maybe.isDefined & node2Maybe.isDefined) {
+        addEdge(RawEdge(edgeId, node1, node2, Some(distance)))
+      }
+    }
+
+    this.edges
   }
 
   def generateRandomUncertainData(objectId: Int): List[Point2d] = {
@@ -102,9 +175,18 @@ object Dataset {
   def generateObjects(): List[Stream] = {
     var objectId = 0
     var expiredObjectId = 0
+    val edgesSize = this.edges.size
 
     val a = (1 to (N_OBJECTS + (N_STREAM * 2))).map(_ => {
-      val edgeId = Math.floor(Math.random() * (MAX_EDGE_ID - MIN_EDGE_ID) + MIN_EDGE_ID).toInt
+      val edgeIndex = Math.floor(Math.random() * (edgesSize - 1)).toInt
+      val edgeMaybe = edges.lift(edgeIndex)
+
+      if (edgeMaybe.isEmpty) {
+        //println(this.edges)
+        println("ERROR " + edgeIndex)
+      }
+
+      val edgeId = edgeMaybe.get.id
       val position = Math.random
 
       if (objectId - expiredObjectId >= TIME_EXPIRATION) {

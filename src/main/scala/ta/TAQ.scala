@@ -27,13 +27,13 @@ object TAQ {
     val total = runtime.totalMemory / mb
     val max = runtime.maxMemory / mb
 
-//    println("==== " + str + " ====")
+    //    println("==== " + str + " ====")
     println(used + "\t" + free + "\t" + total + "\t" + max)
   }
 
   def main(args: Array[String]): Unit = {
-//    val cal_table_nodes = Dataset.readNode()
-//    val cal_table_edges = Dataset.readEdge()
+    //    val cal_table_nodes = Dataset.readNode()
+    //    val cal_table_edges = Dataset.readEdge()
 
     val table_nodes = Set(
       RawNode(1, 2, 1),
@@ -77,13 +77,13 @@ object TAQ {
 
     printMemoryUsage("inserted to grid")
 
-//    val streamsN = Dataset.generateObjects()
+    //    val streamsN = Dataset.generateObjects()
 
     printMemoryUsage("generate objects")
 
     val t0 = System.nanoTime()
 
-//    val streamSize = streamsN.size
+    //    val streamSize = streamsN.size
 
     var tStart = System.nanoTime()
 
@@ -126,12 +126,12 @@ import org.openjdk.jmh.annotations.Timeout
 object BenchmarkStreamState {
 }
 
+import stat.Hotel
+
 @State(Scope.Thread)
 class BenchmarkStream {
   import BenchmarkStreamState._
 
-  //val table_edges: Set[RawEdge] = cal_table_edges
-  //val table_nodes: Set[RawNode] = cal_table_nodes
   var index = 0
 
   var streamsN: List[stream.Stream] = _
@@ -141,8 +141,12 @@ class BenchmarkStream {
 
   def runInitial(): Grid = {
     var _grid = new Grid
-    val table_nodes: Set[RawNode] = Dataset.readNode()
-    val table_edges: Set[RawEdge] = Dataset.readEdge()
+
+    val cal_table_nodes: Set[RawNode] = Dataset.readPartialNode().toSet
+    val cal_table_edges: Set[RawEdge] = Dataset.readEdgePartial().toSet
+
+    val table_edges: Set[RawEdge] = cal_table_edges
+    val table_nodes: Set[RawNode] = cal_table_nodes
 
     streamsN = Dataset.generateObjects()
 
@@ -150,25 +154,33 @@ class BenchmarkStream {
     _grid.addRawEdges(table_edges)
 
     (0 until N_OBJECTS).foreach { i =>
-      println(i)
+      println("runInitial " + i)
       val stream = streamsN.lift(i).get
       _grid = TheAlgorithm(_grid, stream)
     }
 
+    _grid.nodes.foreach(n => {
+      Hotel.add(n.objects.size)
+    })
+
+    println(Hotel)
+    println(Hotel.average())
+    Hotel.flush()
+
     _grid
   }
 
-  @Param(Array("1000"))
-  var nObjects: Int = _
+  //@Param(Array("1000"))
+  var nObjects: Int = 1000
 
-  @Param(Array("1.5"))
+  @Param(Array("0.5", "1"))
   var distance: Double = _
 
   @Setup
   def setup(): Unit = {
     Constants.N_OBJECTS = nObjects
     Constants.TIME_EXPIRATION = nObjects
-    Constants.PERCENT_DISTANCE  = distance
+    Constants.PERCENT_DISTANCE = distance
 
     gridFixed = runInitial()
 
@@ -197,7 +209,7 @@ class BenchmarkStream {
     if (stream.isInstanceOf[ExpiredObject]) {
       println("Index "+ index +" Stream Expire " + stream.getId)
     }
-    
+
     grid = TheAlgorithm(grid, stream)
   }
 }

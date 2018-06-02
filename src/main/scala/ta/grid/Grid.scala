@@ -17,7 +17,7 @@ case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
 
 class Grid extends Cloneable {
   private var edges: Set[Edge] = Set()
-  private var nodes: Set[Node] = Set()
+  var nodes: Set[Node] = Set()
   private var rawObjects: Set[RawObject] = Set()
 
   // raw object

@@ -124,16 +124,14 @@ import org.openjdk.jmh.annotations.Timeout
 
 @State(Scope.Benchmark)
 object BenchmarkStreamState {
-  val cal_table_nodes: Set[RawNode] = Dataset.readNode()
-  val cal_table_edges: Set[RawEdge] = Dataset.readEdge()
 }
 
 @State(Scope.Thread)
 class BenchmarkStream {
   import BenchmarkStreamState._
 
-  val table_edges: Set[RawEdge] = cal_table_edges
-  val table_nodes: Set[RawNode] = cal_table_nodes
+  //val table_edges: Set[RawEdge] = cal_table_edges
+  //val table_nodes: Set[RawNode] = cal_table_nodes
   var index = 0
 
   var streamsN: List[stream.Stream] = _
@@ -143,6 +141,8 @@ class BenchmarkStream {
 
   def runInitial(): Grid = {
     var _grid = new Grid
+    val table_nodes: Set[RawNode] = Dataset.readNode()
+    val table_edges: Set[RawEdge] = Dataset.readEdge()
 
     streamsN = Dataset.generateObjects()
 
@@ -161,10 +161,14 @@ class BenchmarkStream {
   @Param(Array("1000"))
   var nObjects: Int = _
 
+  @Param(Array("1.5"))
+  var distance: Double = _
+
   @Setup
   def setup(): Unit = {
     Constants.N_OBJECTS = nObjects
     Constants.TIME_EXPIRATION = nObjects
+    Constants.PERCENT_DISTANCE  = distance
 
     gridFixed = runInitial()
 

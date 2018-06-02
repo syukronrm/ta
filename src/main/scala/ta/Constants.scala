@@ -9,14 +9,14 @@ object Constants {
   @inline final val DIMENSION = 2
 
   @inline var N_OBJECTS = 100
-  @inline final val N_POINTS = 100
+  @inline final val N_POINTS = 10
 
   @inline val MIN_DATASPACE = 0
   @inline val MAX_DATASPACE = 10000
 
   @inline val RANGE = 250
 
-  @inline val PERCENT_DISTANCE = 0.5
+  @inline var PERCENT_DISTANCE = 0.5
 
   @inline var TIME_EXPIRATION = 100
 

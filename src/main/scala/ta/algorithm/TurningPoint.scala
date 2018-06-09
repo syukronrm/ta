@@ -167,12 +167,12 @@ object TurningPoint {
       }
     }
 
-    if (Q.nonEmpty) {
-      println("    Total Landmarks: ")
-      Q.foreach(l => {
-          println("        " + l)
-      })
-    }
+//    if (Q.nonEmpty) {
+//      println("    Total Landmarks: ")
+//      Q.foreach(l => {
+//          println("        " + l)
+//      })
+//    }
 
     processLandmark(Q.toList, spNodeS, spNodeE, edge)
   }
@@ -323,9 +323,9 @@ object TurningPoint {
 
     turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
 
-    println("      Total Turning Points " + edge.id + " len " + edge.length + ":")
-    turningPointList.foreach(t => {
-      println("        Start: " + t.dStart + "\t End: " + t.dEnd + "\t SP: " + t.SP.map(_.id).toString())
-    })
+//    println("      Total Turning Points " + edge.id + " len " + edge.length + ":")
+//    turningPointList.foreach(t => {
+//      println("        Start: " + t.dStart + "\t End: " + t.dEnd + "\t SP: " + t.SP.map(_.id).toString())
+//    })
   }
 }

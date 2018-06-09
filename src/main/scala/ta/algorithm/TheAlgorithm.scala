@@ -240,7 +240,7 @@ object TheAlgorithm {
       val ddrRect = rect.getDDR.asInstanceOf[Rect2d]
       val qRect = createRect(q.points)
 
-      if (ddrRect.contains(qRect)) {
+      if (ddrRect.contains(qRect) & distance < q.distance) {
         //println("      mark " + q.id + " as impossible")
         // Object is impossible
         Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance, q.position)
@@ -249,7 +249,7 @@ object TheAlgorithm {
         val objProb = getDominationProbability(node.tree, ddrRect, q.id)
         rawObject.points.foreach(p => node.tree.remove(p))
         //println("      probability object " + q.id + " dominate object "+ rawObject.id +" is " + objProb)
-        if (objProb > (1 - P_THRESHOLD)) {
+        if (objProb > (1 - P_THRESHOLD) & distance < q.distance) {
           //println("        mark " + q.id + " as impossible")
           // Object is impossible
           Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance, q.position)

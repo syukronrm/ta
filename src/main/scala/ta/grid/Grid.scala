@@ -82,13 +82,13 @@ class Grid extends Cloneable {
 
       rawEdge.lengthMaybe match {
         case Some(length) =>
-          Edge(rawEdge.id, rawEdge.i, rawEdge.j, length, g, Set())
+          Edge(rawEdge.id, rawEdge.i, rawEdge.j, length, Set())
         case None =>
           val nodej = getNode(rawEdge.j).get
           val dx = nodej.x - nodei.x
           val dy = nodej.y - nodei.y
           val length = Math.sqrt(dx*dx + dy*dy)
-          Edge(rawEdge.id, rawEdge.i, rawEdge.j, length, g, Set())
+          Edge(rawEdge.id, rawEdge.i, rawEdge.j, length, Set())
       }
     }).toList.toSet
 
@@ -124,7 +124,16 @@ class Grid extends Cloneable {
 
     val edge = edgeMaybe.get
 
-    val newObject = Object(rawObject.id, rawObject.edgeId, 100, isImpossible = false, edge.i, rawObject.points, 0, rawObject.position)
+    val newObject = Object(
+      rawObject.id,
+      rawObject.edgeId,
+      100,
+      isImpossible = false,
+      edge.i,
+      rawObject.points,
+      rawObject.position * edge.length,
+      rawObject.position)
+
     addObjectToEdge(newObject)
   }
 
@@ -135,7 +144,7 @@ class Grid extends Cloneable {
     */
   def addObjectToEdge(obj: Object): Unit = {
     val e = this.edges.par.find(_.id == obj.edgeId).get
-    val newEdge = Edge(e.id, e.i, e.j, e.length, e.g, e.objects + obj)
+    val newEdge = Edge(e.id, e.i, e.j, e.length, e.objects + obj)
 
     this.edges = this.edges - e + newEdge
   }
@@ -148,7 +157,7 @@ class Grid extends Cloneable {
   def removeObjectFromEdge(obj: Object): Unit = {
     val e = this.edges.par.find(_.id == obj.edgeId).get
 
-    this.edges = this.edges - e + Edge(e.id, e.i, e.j, e.length, e.g, e.objects - obj)
+    this.edges = this.edges - e + Edge(e.id, e.i, e.j, e.length, e.objects - obj)
   }
 
 
@@ -161,7 +170,7 @@ class Grid extends Cloneable {
     val e = this.edges.par.find(_.id == o.edgeId).get
     val deletedObject = e.objects.find(_.id == objectId).get
 
-    this.edges = this.edges - e + Edge(e.id, e.i, e.j, e.length, e.g, e.objects - deletedObject)
+    this.edges = this.edges - e + Edge(e.id, e.i, e.j, e.length, e.objects - deletedObject)
   }
 
   /** Find all edges connected to nodes

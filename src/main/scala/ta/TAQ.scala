@@ -173,7 +173,7 @@ class BenchmarkStream {
   //@Param(Array("1000"))
   var nObjects: Int = 1000
 
-  @Param(Array("0.5", "1"))
+  @Param(Array("1"))
   var distance: Double = _
 
   @Setup

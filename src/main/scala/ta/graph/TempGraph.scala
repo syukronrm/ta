@@ -10,7 +10,6 @@ import ta.stream.RawObject
 import ta.grid.TheTree._
 import scalax.collection.edge.Implicits._
 
-
 class TempGraph {
   var graph: Graph[Node, WLkUnDiEdge] = Graph()
 

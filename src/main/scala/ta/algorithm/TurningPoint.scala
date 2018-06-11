@@ -17,8 +17,8 @@ case class TP(dStart: Double, dEnd: Double, SP: Set[Object])
 
 object TurningPoint {
   def processLandmark(nodeS: Node, edge: Edge, nodeE: Node): Unit = {
-    val spNodeS = nodeS.objects.filter(_.isImpossible == false)
-    val spNodeE = nodeE.objects.filter(_.isImpossible == false)
+    val spNodeS = nodeS.objects.filter(o => !o.isImpossible & o.skyProb >= P_THRESHOLD)
+    val spNodeE = nodeE.objects.filter(o => !o.isImpossible & o.skyProb >= P_THRESHOLD)
     val Se = edge.objects
 
 //    spNodeE = spNodeE.filter(obj => {

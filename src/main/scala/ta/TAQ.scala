@@ -210,7 +210,6 @@ class BenchmarkStream {
     index = N_OBJECTS
   }
 
-
   @Benchmark
   @BenchmarkMode(Array(Mode.AverageTime))
   @Timeout(time = 120, timeUnit = TimeUnit.MINUTES)

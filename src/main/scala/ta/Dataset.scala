@@ -1,5 +1,7 @@
 package ta
 
+import java.util.Scanner
+
 import collection.spatial.RTree
 import ta.geometry.Point2d
 import ta.grid.{Edge, GridLocation, Node}
@@ -149,29 +151,6 @@ object Dataset {
     this.edges
   }
 
-  def generateRandomUncertainData(objectId: Int): List[Point2d] = {
-    val baseX = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
-    val baseY = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
-    val prob: Double = 1.0/N_POINTS
-
-    var startX: Int = baseX - RANGE
-    var endX: Int = baseX + RANGE
-    if (startX < MIN_DATASPACE) startX = MIN_DATASPACE
-    if (endX > MAX_DATASPACE) endX = MAX_DATASPACE
-
-    var startY: Int = baseY - RANGE
-    var endY: Int = baseY + RANGE
-    if (startY < MIN_DATASPACE) startY = MIN_DATASPACE
-    if (endY > MAX_DATASPACE) endY = MAX_DATASPACE
-
-    (1 to N_POINTS).par.map(_ => {
-      val x = startX + Random.nextInt(endX - startX + 1)
-      val y = startY + Random.nextInt(endY - startY + 1)
-
-      new Point2d(x, y, prob, objectId)
-    }).toList
-  }
-
   def generateObjects(): List[Stream] = {
     var objectId = 0
     var expiredObjectId = 0
@@ -194,11 +173,62 @@ object Dataset {
         ExpiredObject(expiredObjectId)
       } else {
         objectId += 1
-        RawObject(objectId, edgeId, position, generateRandomUncertainData(objectId))
+        RawObject(objectId, edgeId, position, generateUncertainData(objectId))
       }
     }).toList
 
     a
+  }
+
+  def generateUncertainData(objectId: Int) = {
+    val List(baseX, baseY) = KIND_OF_DATA match {
+      case 1 =>
+        anticorrelatedUncertainData()
+      case 2 =>
+        correlatedUncertainData()
+      case _ =>
+        independenceUncertainData()
+    }
+
+    val prob: Double = 1.0/N_POINTS
+
+    var startX: Int = baseX - RANGE
+    var endX: Int = baseX + RANGE
+    if (startX < MIN_DATASPACE) startX = MIN_DATASPACE
+    if (endX > MAX_DATASPACE) endX = MAX_DATASPACE
+
+    var startY: Int = baseY - RANGE
+    var endY: Int = baseY + RANGE
+    if (startY < MIN_DATASPACE) startY = MIN_DATASPACE
+    if (endY > MAX_DATASPACE) endY = MAX_DATASPACE
+
+    (1 to N_POINTS).par.map(_ => {
+      val x = startX + Random.nextInt(endX - startX + 1)
+      val y = startY + Random.nextInt(endY - startY + 1)
+
+      new Point2d(x, y, prob, objectId)
+    }).toList
+  }
+
+  def anticorrelatedUncertainData() = {
+    val baseX = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
+    val baseY = (MAX_DATASPACE - MIN_DATASPACE) - baseX
+
+    List(baseX, baseY)
+  }
+
+  def correlatedUncertainData() = {
+    val baseX = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
+    val baseY = baseX
+
+    List(baseX, baseY)
+  }
+
+  def independenceUncertainData() = {
+    val baseX = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
+    val baseY = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
+
+    List(baseX, baseY)
   }
 }
 

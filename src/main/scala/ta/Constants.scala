@@ -24,4 +24,9 @@ object Constants {
   @inline val MAX_EDGE_ID = 21692
 
   @inline val N_STREAM = 100
+
+  @inline var KIND_OF_DATA = 1
+  // 1 : anticorrelated
+  // 2 : correlated
+  // 3 : independence
 }

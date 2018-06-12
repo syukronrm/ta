@@ -94,8 +94,6 @@ object TheAlgorithm {
     Q.enqueue(NodeQueue(nodej.id, distanceNodeJ))
     visitedNodes = visitedNodes + nodej.id
 
-    var futures: Set[Future[Unit]] = Set()
-
     while (Q.nonEmpty) {
       Q = Q.sortBy(_.distance)
       val NodeQueue(currentNodeId, distance) = Q.dequeue()
@@ -104,23 +102,19 @@ object TheAlgorithm {
       if (distance < D_EPSILON) {
         val currentNode = tempGraph.getNode(currentNodeId).get
 
-        val fut = Future {
-          val updatedNode = stream match {
-            case _: RawObject =>
-              //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
-              //println("    distance node " + currentNodeId + ": " + distance)
-              //println("    insert object " + rawObject.id + " to node " + currentNodeId)
-              insertToNode(grid, currentNode, rawObject, distance, rect)
-            case ExpiredObject(objectId) =>
-              //println("    delete object " + rawObject + " from node " + currentNodeId)
-              deleteFromNode(currentNode, objectId, rect)
-          }
-
-          tempGraph.updateNode(updatedNode)
-          grid.updateNode(updatedNode)
+        val updatedNode = stream match {
+          case _: RawObject =>
+            //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
+            //println("    distance node " + currentNodeId + ": " + distance)
+            //println("    insert object " + rawObject.id + " to node " + currentNodeId)
+            insertToNode(grid, currentNode, rawObject, distance, rect)
+          case ExpiredObject(objectId) =>
+            //println("    delete object " + rawObject + " from node " + currentNodeId)
+            deleteFromNode(currentNode, objectId, rect)
         }
 
-        futures += fut
+        tempGraph.updateNode(updatedNode)
+        grid.updateNode(updatedNode)
         //updatedNodes += updatedNode.id
 
         //println("    node neighbor ")
@@ -150,8 +144,7 @@ object TheAlgorithm {
         })
       }
     }
-
-    Await.result(Future.sequence(futures), Duration.Inf)
+    
     computeTurningPoint(tempGraph.graph)
     grid
 //    updateGrid(grid, tempGraph.graph)

@@ -189,14 +189,18 @@ class BenchmarkStream {
   //@Param(Array("1000"))
   var nObjects: Int = 1000
 
-  @Param(Array("1"))
-  var distance: Double = _
+//  @Param(Array("1"))
+  var distance: Double = 1
+
+  @Param(Array("32", "64"))
+  var gridCell: Int = _
 
   @Setup
   def setup(): Unit = {
     Constants.N_OBJECTS = nObjects
     Constants.TIME_EXPIRATION = nObjects
     Constants.PERCENT_DISTANCE = distance
+    Constants.N_GRID_CELL = gridCell
 
     gridFixed = runInitial()
 
@@ -263,14 +267,18 @@ class BenchmarkBruteForce {
   //@Param(Array("1000"))
   var nObjects: Int = 1000
 
-  @Param(Array("1"))
-  var distance: Double = _
+//  @Param(Array("1"))
+  var distance: Double = 1
+
+  @Param(Array("32", "64"))
+  var gridCell: Int = _
 
   @Setup
   def setup(): Unit = {
     Constants.N_OBJECTS = nObjects
     Constants.TIME_EXPIRATION = nObjects
     Constants.PERCENT_DISTANCE = distance
+    Constants.N_GRID_CELL = gridCell
 
     naiveFixed = runInitial()
 

@@ -3,7 +3,7 @@ package ta
 object Constants {
   @inline var D_EPSILON: Double = 10
   @inline final val P_THRESHOLD = 0.5
-  @inline final val N_GRID_CELL = 64
+  @inline var N_GRID_CELL = 64
   @inline var GRID_WIDTH: Double = 5
   @inline var GRID_HEIGHT: Double = 5
   @inline final val DIMENSION = 2
@@ -25,7 +25,7 @@ object Constants {
 
   @inline val N_STREAM = 100
 
-  @inline var KIND_OF_DATA = 1
+  @inline var KIND_OF_DATA = 3
   // 1 : anticorrelated
   // 2 : correlated
   // 3 : independence

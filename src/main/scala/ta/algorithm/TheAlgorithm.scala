@@ -144,7 +144,7 @@ object TheAlgorithm {
         })
       }
     }
-    
+
     computeTurningPoint(tempGraph.graph)
     grid
 //    updateGrid(grid, tempGraph.graph)

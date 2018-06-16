@@ -8,7 +8,7 @@ object Constants {
   @inline var GRID_HEIGHT: Double = 5
   @inline final val DIMENSION = 2
 
-  @inline var N_OBJECTS = 100
+  @inline var N_OBJECTS = 1000
   @inline final val N_POINTS = 10
 
   @inline val MIN_DATASPACE = 0
@@ -23,7 +23,7 @@ object Constants {
   @inline val MIN_EDGE_ID = 0
   @inline val MAX_EDGE_ID = 21692
 
-  @inline val N_STREAM = 100
+  @inline val N_STREAM = 1000
 
   @inline var KIND_OF_DATA = 3
   // 1 : anticorrelated

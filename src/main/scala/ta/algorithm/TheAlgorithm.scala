@@ -9,7 +9,6 @@ import ta.stream.{ExpiredObject, RawObject, Stream}
 import ta.Constants._
 import ta.geometry.{Point2d, Rect2d, Rect3d}
 import ta.grid.Rect._
-import ta.algorithm.TurningPoint
 import ta.algorithm.TurningPoint._
 
 import scala.collection.JavaConverters._
@@ -34,6 +33,7 @@ object TheAlgorithm {
 
     //var updatedNodes: Set[Int] = Set()
     var visitedNodes: Set[Int] = Set()
+    var updatedNodes: Set[Int] = Set()
 
     val rawObject = stream match {
       case _rawObject: RawObject =>
@@ -100,14 +100,25 @@ object TheAlgorithm {
       //println("  dequeue node " + currentNodeId + " with distance " + distance)
 
       if (distance < D_EPSILON) {
-        val currentNode = tempGraph.getNode(currentNodeId).get
+        val currentNode = grid.getNode(currentNodeId).get
+//        val currentNode = tempGraph.getNode(currentNodeId).get
+
+        val gridLocation = grid.getGridLocation(currentNode)
+
+        if (!addedGrid.contains(gridLocation)) {
+          //println("add Edges " + gridLocation.toString)
+          val EdgesNodes(edgesN, nodesN) = grid.getDataGrid(gridLocation)
+          tempGraph.addEdges(nodesN, edgesN)
+          addedGrid += gridLocation
+          //println("        add grid (" + gridLocation.x + ", " + gridLocation.y +")")
+        }
 
         val updatedNode = stream match {
           case _: RawObject =>
             //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
             //println("    distance node " + currentNodeId + ": " + distance)
             //println("    insert object " + rawObject.id + " to node " + currentNodeId)
-            insertToNode(grid, currentNode, rawObject, distance, rect)
+            insertToNode(currentNode, rawObject, distance, rect)
           case ExpiredObject(objectId) =>
             //println("    delete object " + rawObject + " from node " + currentNodeId)
             deleteFromNode(currentNode, objectId, rect)
@@ -115,37 +126,45 @@ object TheAlgorithm {
 
         tempGraph.updateNode(updatedNode)
         grid.updateNode(updatedNode)
-        //updatedNodes += updatedNode.id
+        updatedNodes += updatedNode.id
 
         //println("    node neighbor ")
         val neighborNodesEdges = tempGraph.getNeighborNodesEdges(currentNodeId)
         //println("neighbors " + neighborNodesEdges.toString())
 
-        neighborNodesEdges.keys.foreach(n => {
-          //println("      node " + n.id)
-          if (!visitedNodes.contains(n.id)) {
-            val gridLocation = grid.getGridLocation(n)
-            if (!addedGrid.contains(gridLocation)) {
-              //println("add Edges " + gridLocation.toString)
-              val EdgesNodes(edgesN, nodesN) = grid.getDataGrid(gridLocation)
-              tempGraph.addEdges(nodesN, edgesN)
-              addedGrid += gridLocation
-              //println("        add grid (" + gridLocation.x + ", " + gridLocation.y +")")
-            }
-
-            //val distanceUnvisitedNode = tempGraph.calculateDistance(rawObject, n.id)
-            val distanceUnvisitedNode = distance + neighborNodesEdges(n)
-            //println("        distance node " + n.id + ": " + distanceUnvisitedNode)
-            Q.enqueue(NodeQueue(n.id, distanceUnvisitedNode))
-
-            visitedNodes += n.id
-            //println("        visit node " + n.id)
+        neighborNodesEdges.keys.foreach { nodeId =>
+          if (!visitedNodes.contains(nodeId)) {
+            val distanceUnvisitedNode = distance + neighborNodesEdges(nodeId)
+            Q.enqueue(NodeQueue(nodeId, distanceUnvisitedNode))
+            visitedNodes += nodeId
           }
-        })
+        }
+//        neighborNodesEdges.keys.foreach(n => {
+//          //println("      node " + n.id)
+//          if (!visitedNodes.contains(n.id)) {
+//            val gridLocation = grid.getGridLocation(n)
+//            if (!addedGrid.contains(gridLocation)) {
+//              //println("add Edges " + gridLocation.toString)
+//              val EdgesNodes(edgesN, nodesN) = grid.getDataGrid(gridLocation)
+//              tempGraph.addEdges(nodesN, edgesN)
+//              addedGrid += gridLocation
+//              //println("        add grid (" + gridLocation.x + ", " + gridLocation.y +")")
+//            }
+//
+//            //val distanceUnvisitedNode = tempGraph.calculateDistance(rawObject, n.id)
+//            val distanceUnvisitedNode = distance + neighborNodesEdges(n)
+//            //println("        distance node " + n.id + ": " + distanceUnvisitedNode)
+//            Q.enqueue(NodeQueue(n.id, distanceUnvisitedNode))
+//
+//            visitedNodes += n.id
+//            //println("        visit node " + n.id)
+//          }
+//        })
       }
     }
 
-    computeTurningPoint(tempGraph.graph)
+//    computeTurningPoint(tempGraph.graph)
+    computeTurningPoint(tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes)
     grid
 //    updateGrid(grid, tempGraph.graph)
   }
@@ -156,24 +175,35 @@ object TheAlgorithm {
     grid
   }
 
-  def computeTurningPoint(graph: Graph[Node, WLkUnDiEdge]): Unit = {
-    graph.edges.foreach(e => {
-      val nodeSId = e.label.asInstanceOf[Edge].i
+  def computeTurningPoint(edges: mutable.Map[Int, Edge], nodes: mutable.Map[Int, Node], updatedNodes: Set[Int]): Unit = {
+    edges.values
+      .filter(e => updatedNodes.contains(e.i) | updatedNodes.contains(e.j))
+      .foreach { e =>
+        val nodeS = nodes(e.i)
+        val nodeE = nodes(e.j)
 
-      val List(nodeS, nodeE) = if (e._1.toOuter.id == nodeSId) {
-        List(e._1.toOuter, e._2.toOuter)
-      } else {
-        List(e._2.toOuter, e._1.toOuter)
+        processLandmark(nodeS, e, nodeE)
       }
-
-      val edge = e.label.asInstanceOf[Edge]
-
-      //println("\n")
-      //println("==========")
-      //println("Process Turning Point edge " + edge.id + " " + nodeS.id + "~" + nodeE.id + " " + edge.length)
-      processLandmark(nodeS, edge, nodeE)
-    })
   }
+
+//  def computeTurningPoint(graph: Graph[Node, WLkUnDiEdge]): Unit = {
+//    graph.edges.foreach(e => {
+//      val nodeSId = e.label.asInstanceOf[Edge].i
+//
+//      val List(nodeS, nodeE) = if (e._1.toOuter.id == nodeSId) {
+//        List(e._1.toOuter, e._2.toOuter)
+//      } else {
+//        List(e._2.toOuter, e._1.toOuter)
+//      }
+//
+//      val edge = e.label.asInstanceOf[Edge]
+//
+//      //println("\n")
+//      //println("==========")
+//      //println("Process Turning Point edge " + edge.id + " " + nodeS.id + "~" + nodeE.id + " " + edge.length)
+//      processLandmark(nodeS, edge, nodeE)
+//    })
+//  }
 
   def removePoints(tree: RTree[Point2d], points: List[Point2d]): RTree[Point2d] = {
     val newTree = new RTree(new Point2d.Builder(), 2, 8, RTree.Split.AXIAL)
@@ -222,13 +252,16 @@ object TheAlgorithm {
     Node(currentNode.id, currentNode.x, currentNode.y, currentNode.tree, newObjects)
   }
 
-  def insertToNode(grid: Grid, node: Node,
+  def insertToNode(node: Node,
                    rawObject: RawObject,
                    distance: Double,
                    rect: Rect2d): Node = {
 
     val overlappedObjects = findPDROverlappedObjects(node, rect)
     //println("    overlapped objects:")
+
+    rawObject.points.foreach(p => node.tree.add(p))
+
     val updatedOverlappedObjects = overlappedObjects.map(q => {
       val ddrRect = rect.getDDR.asInstanceOf[Rect2d]
       val qRect = createRect(q.points)
@@ -238,25 +271,23 @@ object TheAlgorithm {
         // Object is impossible
         Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance, q.position)
       } else {
-        rawObject.points.foreach(p => node.tree.add(p))
+//        rawObject.points.foreach(p => node.tree.add(p))
         val objProb = getDominationProbability(node.tree, ddrRect, q.id)
-        rawObject.points.foreach(p => node.tree.remove(p))
+//        rawObject.points.foreach(p => node.tree.remove(p))
         //println("      probability object " + q.id + " dominate object "+ rawObject.id +" is " + objProb)
         if (objProb > (1 - P_THRESHOLD) & distance < q.distance) {
           //println("        mark " + q.id + " as impossible")
           // Object is impossible
           Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance, q.position)
         } else {
-          rawObject.points.foreach(p => node.tree.add(p))
+//          rawObject.points.foreach(p => node.tree.add(p))
           val skyProb = SkyPrX(node.tree, q.id)
-          rawObject.points.foreach(p => node.tree.remove(p))
+//          rawObject.points.foreach(p => node.tree.remove(p))
           //println("      SkyProb object " + q.id + " = " + skyProb)
           Object(q.id, q.edgeId, skyProb, q.isImpossible, node.id, q.points, q.distance, q.position)
         }
       }
     })
-
-    rawObject.points.foreach(p => node.tree.add(p))
 
     val updatedObjects = node.objects.map(o => {
       val updated = updatedOverlappedObjects.find(_.id == o.id)
@@ -307,13 +338,18 @@ object TheAlgorithm {
   }
 
   def isyNotDominatex(y: Point2d, x: Point2d): Boolean = {
-    val Y = new Rect2d(y)
-    val X = new Rect2d(x)
-
-    if (Y.getDDR.contains(X))
+    if (y.x <= x.x & y.y <= y.x) {
       false
-    else
+    } else {
       true
+    }
+
+//    val Y = new Rect2d(y)
+//    val X = new Rect2d(x)
+//    if (Y.getDDR.contains(X))
+//      false
+//    else
+//      true
   }
 
   def getDominationProbability(tree: RTree[Point2d], ddrRect: Rect2d, objectId: Int): Double = {

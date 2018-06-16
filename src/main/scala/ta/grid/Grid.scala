@@ -14,11 +14,14 @@ import scala.collection.parallel.ParSet
 import scala.math.{floor, round}
 
 case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
+case class Table(edges: Set[Int], nodes: Set[Int])
 
 class Grid extends Cloneable {
   private var edges: Set[Edge] = Set()
   var nodes: Set[Node] = Set()
   private var rawObjects: Set[RawObject] = Set()
+
+  var tableGrid: Map[Int, Map[Int, Table]] = Map()
 
   // raw object
   def getRawObject(objectId: Int): Option[RawObject] = rawObjects.par.find(_.id == objectId)
@@ -66,6 +69,10 @@ class Grid extends Cloneable {
     this.nodes.par.filter((n: Node) => {
       (round(floor(n.x / GRID_WIDTH)) == g.x) & (round(floor(n.y / GRID_HEIGHT)) == g.y)
     }).toList
+  }
+
+  def getNodesFromId(nodeIds: Set[Int]): List[Node] = {
+    this.nodes.par.filter((n: Node) => nodeIds.contains(n.id)).toList
   }
 
   /** Find all nodes connected to edges */
@@ -221,10 +228,16 @@ class Grid extends Cloneable {
     */
   def getDataGrid(g: GridLocation): EdgesNodes = {
     val _nodes = getNodes(g)
+    val _nodeIds = _nodes.map(_.id)
     val edges = getEdges(_nodes)
-    val nodes = getNodes(edges).toSet
+    val nodeIds = edges
+      .flatMap(e => Set(e.i, e.j))
+      .filterNot(nid => _nodeIds.contains(nid))
+      .toSet
+//    val nodes = getNodes(edges).toSet
+    val nodes = getNodesFromId(nodeIds).toSet
 
-    EdgesNodes(edges.toSet, nodes)
+    EdgesNodes(edges.toSet, _nodes.toSet ++ nodes)
   }
 
   def cloneGrid(): Grid = {

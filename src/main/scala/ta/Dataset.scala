@@ -58,6 +58,7 @@ object Dataset {
         maxY = lat
       }
 
+      this.addNode(RawNode(nodeId, lon, lat))
       RawNode(nodeId, lon, lat)
     }
 
@@ -72,7 +73,7 @@ object Dataset {
     Constants.GRID_HEIGHT = gridHeight
     Constants.GRID_WIDTH = gridWidth
 
-    Constants.D_EPSILON = ((rangeX + rangeY) / 2) * PERCENT_DISTANCE
+    Constants.D_EPSILON = (maxX - minX) * (PERCENT_DISTANCE / 100.0)
 
     a
   }
@@ -105,7 +106,7 @@ object Dataset {
     Constants.GRID_HEIGHT = gridHeight
     Constants.GRID_WIDTH = gridWidth
 
-    Constants.D_EPSILON = ((rangeX + rangeY) / 2) * PERCENT_DISTANCE
+    Constants.D_EPSILON = 6 * (PERCENT_DISTANCE / 100.0)
 
     a
   }
@@ -119,15 +120,18 @@ object Dataset {
 
   def readEdge(): List[RawEdge] = {
     val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines()
-    lines.map { l =>
+
+    lines.foreach { l =>
       val lineArray = l.split(' ')
       val edgeId = lineArray(0).toInt
       val node1 = lineArray(1).toInt
       val node2 = lineArray(2).toInt
       val distance = lineArray(3).toDouble
 
-      RawEdge(edgeId, node1, node2, Some(distance))
-    }.toList
+      addEdge(RawEdge(edgeId, node1, node2, Some(distance)))
+    }
+
+    this.edges
   }
 
   def readEdgePartial(): List[RawEdge] = {
@@ -170,9 +174,11 @@ object Dataset {
 
       if (objectId - expiredObjectId >= TIME_EXPIRATION) {
         expiredObjectId += 1
+        //println("generate expire object Id " + expiredObjectId)
         ExpiredObject(expiredObjectId)
       } else {
         objectId += 1
+        //println("generate stream object Id " + objectId)
         RawObject(objectId, edgeId, position, generateUncertainData(objectId))
       }
     }).toList

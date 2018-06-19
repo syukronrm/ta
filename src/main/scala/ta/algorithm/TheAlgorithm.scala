@@ -44,8 +44,6 @@ object TheAlgorithm {
       case ExpiredObject(id) =>
        // println("Deletion Object ID " + id)
         val _rawObject = grid.getRawObject(id).get
-        grid.removeObjectFromEdge(id)
-        grid.removeRawObject(id)
         _rawObject
     }
 
@@ -167,6 +165,12 @@ object TheAlgorithm {
     if (ENV == "TESTING") {
       computeTurningPoint(grid, tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes)
     }
+
+    if (stream.isInstanceOf[ExpiredObject]) {
+      grid.removeObjectFromEdge(stream.getId)
+      grid.removeRawObject(stream.getId)
+    }
+
 
     grid
 //    updateGrid(grid, tempGraph.graph)

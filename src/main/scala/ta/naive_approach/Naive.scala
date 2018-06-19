@@ -74,7 +74,7 @@ class TempGraph {
   }
 
   def getNodesByDistance(g: Graph[Int, WLkUnDiEdge], objId: Int, nodes: Set[Node]) = {
-    nodes.map { n =>
+    nodes.par.map { n =>
       n.id -> findDistance(g, n.id)
     }.toList.toMap
   }

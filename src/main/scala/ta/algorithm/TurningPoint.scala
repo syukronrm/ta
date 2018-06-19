@@ -10,16 +10,19 @@ import ta.Constants._
 import ta.geometry._
 import ta.landmark._
 import ta.algorithm.TheAlgorithm._
+import ta.grid.Grid
 
 import scala.collection.JavaConverters._
 
 case class TP(dStart: Double, dEnd: Double, SP: Set[Object])
 
 object TurningPoint {
-  def processLandmark(nodeS: Node, edge: Edge, nodeE: Node): Unit = {
+  def processLandmark(grid: Grid, nodeS: Node, edge: Edge, nodeE: Node): Unit = {
     val spNodeS = nodeS.objects.filter(o => !o.isImpossible & o.skyProb >= P_THRESHOLD)
     val spNodeE = nodeE.objects.filter(o => !o.isImpossible & o.skyProb >= P_THRESHOLD)
     val Se = edge.objects
+
+
 
 //    spNodeE = spNodeE.filter(obj => {
 //      spNodeS.exists(o => {
@@ -31,13 +34,18 @@ object TurningPoint {
       objects.find(o => o.id == obj.id & o != obj)
 
     val SP = spNodeS ++ spNodeE ++ Se
+
+    val dataPoints = SP.map { o =>
+      o.id -> grid.getRawObject(o.id).get.points
+    }.toMap
+
     //println("GSP " + SP.map(_.id).toString())
     val Q = mutable.Queue[Landmark]()
 
     def findDominatedObjects(obj: Object, objects: Set[Object]): Set[Object] = {
       objects.filter(o => {
-        val pointsL = obj.points
-        val points = o.points
+        val pointsL = dataPoints(obj.id)
+        val points = dataPoints(o.id)
 
         val tree = new RTree(new Point2d.Builder(), 2, 8, RTree.Split.AXIAL)
 

@@ -161,8 +161,11 @@ class BenchmarkStream {
   def runInitial(): Grid = {
     var _grid = new Grid
 
-    val cal_table_nodes: Set[RawNode] = Dataset.readNode().toSet
-    val cal_table_edges: Set[RawEdge] = Dataset.readEdge().toSet
+    val cal_table_nodes: Set[RawNode] = Dataset.readNodePartial().toSet
+    val cal_table_edges: Set[RawEdge] = Dataset.readEdgePartial().toSet
+
+    println("nodes size " + cal_table_nodes.size)
+    println("edges size " + cal_table_edges.size)
 
     val table_edges: Set[RawEdge] = cal_table_edges
     val table_nodes: Set[RawNode] = cal_table_nodes
@@ -172,12 +175,17 @@ class BenchmarkStream {
     _grid.addRawNodes(table_nodes)
     _grid.addRawEdges(table_edges)
 
+    ENV = "GENERATE"
     (0 until N_OBJECTS).foreach { i =>
-//      if (i % 20 == 0)
-      println("runInitial " + i)
+      if (i % 100 == 0)
+        println("runInitial " + i)
       val stream = streamsN.lift(i).get
       _grid = TheAlgorithm(_grid, stream)
     }
+    ENV = "TESTING"
+    println("Start Update All SkyProb")
+    _grid.updateAllSkyProb()
+    println("End Update All SkyProb")
 
     _grid.nodes.foreach(n => {
       Hotel.add(n.objects.size)
@@ -190,14 +198,18 @@ class BenchmarkStream {
     _grid
   }
 
-  @Param(Array("500"))
-  var nObjects: Int = _
+  // @Param(Array("25000", "35000", "50000", "100000"))
+  var nObjects: Int = 10000
 
-//  @Param(Array("1"))
-  var distance: Double = 2
+  // 0.5km, 2.5km, 5km, 10km, 15km
+  // @Param(Array("1", "2", "3"))
+  var distance: Double = 0.5
 
-  @Param(Array("32", "64", "128", "256", "512", "1024"))
-  var gridCell: Int = _
+  // @Param(Array("32", "64", "128", "256", "512", "1024"))
+  var gridCell: Int = 128
+
+  // @Param(Array("10", "100", "500", "1000", "5000"))
+  var nPoints: Int = 100
 
   @Setup
   def setup(): Unit = {
@@ -205,16 +217,17 @@ class BenchmarkStream {
     Constants.TIME_EXPIRATION = nObjects
     Constants.PERCENT_DISTANCE = distance
     Constants.N_GRID_CELL = gridCell
+    Constants.N_POINTS = nPoints
 
-    gridFixed = runInitial()
+    grid = runInitial()
 
-    grid = gridFixed.cloneGrid()
+//    grid = gridFixed.cloneGrid()
     index = N_OBJECTS
   }
 
   @TearDown(Level.Iteration)
   def tear(): Unit = {
-    grid = gridFixed.cloneGrid()
+//    grid = gridFixed.cloneGrid()
 //    index = N_OBJECTS
   }
 
@@ -234,14 +247,6 @@ class BenchmarkStream {
         streamsN.lift(index).get
     }
 
-   // if (stream.isInstanceOf[RawObject]) {
-   //   println("Index "+ index +" Stream RawObject " + stream.getId)
-   // }
-
-   // if (stream.isInstanceOf[ExpiredObject]) {
-   //   println("Index "+ index +" Stream Expire " + stream.getId)
-   // }
-
     grid = TheAlgorithm(grid, stream)
   }
 }
@@ -256,30 +261,39 @@ class BenchmarkBruteForce {
   var naive: Naive = _
 
   def runInitial() = {
-    val cal_table_nodes: Set[RawNode] = Dataset.readPartialNode().toSet
+    val cal_table_nodes: Set[RawNode] = Dataset.readNodePartial().toSet
     val cal_table_edges: Set[RawEdge] = Dataset.readEdgePartial().toSet
-
-    val table_edges: Set[RawEdge] = cal_table_edges
     val table_nodes: Set[RawNode] = cal_table_nodes
+    val table_edges: Set[RawEdge] = cal_table_edges
 
+    println("generate dataset")
     streamsN = Dataset.generateObjects()
 
     val naiveApproach = new Naive
+    println("add nodes")
     naiveApproach.addNodes(table_nodes)
+    println("add edges")
     naiveApproach.addRawEdges(table_edges)
 
+    var prevTime = System.nanoTime()
+    var time = System.nanoTime()
+
+    println("initial stream")
     (0 until N_OBJECTS).foreach { i =>
-      if (i % 20 == 0)
-        println("runInitial " + i)
+      //if (i % 20 == 0)
+      println("runInitial " + i)
       val stream = streamsN.lift(i).get
       naiveApproach.naiveAlgorithm(stream)
+      time = System.nanoTime()
+      println("time " + (time - prevTime)/1000000)
+      prevTime = System.nanoTime()
     }
 
     naiveApproach
   }
 
   //@Param(Array("1000"))
-  var nObjects: Int = 1000
+  var nObjects: Int = 10000
 
 //  @Param(Array("1"))
   var distance: Double = 1
@@ -294,32 +308,42 @@ class BenchmarkBruteForce {
     Constants.PERCENT_DISTANCE = distance
     Constants.N_GRID_CELL = gridCell
 
-    naiveFixed = runInitial()
+    println("runInitial()")
+    naive = runInitial()
 
-    naive = naiveFixed.cloneMe()
+    //naive = naiveFixed.cloneMe()
     index = N_OBJECTS
   }
 
   @TearDown(Level.Iteration)
   def tear(): Unit = {
     naive = naiveFixed.cloneMe()
-    index = N_OBJECTS
+    //index = N_OBJECTS
   }
 
 
   @Benchmark
   @BenchmarkMode(Array(Mode.AverageTime))
   @Timeout(time = 120, timeUnit = TimeUnit.MINUTES)
+  @Measurement(iterations = 10, time = 30)
   def doStreaming(): Unit = {
-    val stream = streamsN.lift(index).get
-    index += 1
+    val streamMaybe = streamsN.lift(index)
+
+    val stream = streamMaybe match {
+      case Some(_stream) =>
+        index += 1
+        _stream
+      case None =>
+        index = N_OBJECTS
+        streamsN.lift(index).get
+    }
 
     if (stream.isInstanceOf[RawObject]) {
-      //println("Index "+ index +" Stream RawObject " + stream.getId)
+      println("Index "+ index +" Stream RawObject " + stream.getId)
     }
 
     if (stream.isInstanceOf[ExpiredObject]) {
-      //println("Index "+ index +" Stream Expire " + stream.getId)
+      println("Index "+ index +" Stream Expire " + stream.getId)
     }
 
     naive.naiveAlgorithm(stream)

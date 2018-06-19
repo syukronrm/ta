@@ -6,9 +6,12 @@ import scala.collection.immutable.Set
 import ta.stream.RawObject
 import ta.Constants._
 import ta.{RawEdge, RawNode}
-import ta.geometry.{Point2d, Point3d}
+import ta.geometry.{Point2d, Point3d, Rect2d}
 import TheTree._
+import ta.algorithm.TheAlgorithm.SkyPrX
 import com.rits.cloning.Cloner
+
+import ta.grid.Rect._
 
 import scala.collection.parallel.ParSet
 import scala.math.{floor, round}
@@ -20,6 +23,18 @@ class Grid extends Cloneable {
   private var edges: Set[Edge] = Set()
   var nodes: Set[Node] = Set()
   private var rawObjects: Set[RawObject] = Set()
+
+  def updateAllSkyProb(): Unit = {
+    this.nodes = this.nodes.par.map { node =>
+      println(node.id)
+      node.objects = node.objects.map { o =>
+        o.skyProb = SkyPrX(node.tree, o.id)
+        o
+      }
+
+      node
+    }.toList.toSet
+  }
 
   var tableGrid: Map[Int, Map[Int, Table]] = Map()
 
@@ -137,7 +152,7 @@ class Grid extends Cloneable {
       100,
       isImpossible = false,
       edge.i,
-      rawObject.points,
+      createRect(rawObject.points),
       rawObject.position * edge.length,
       rawObject.position)
 

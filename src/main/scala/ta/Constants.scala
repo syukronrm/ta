@@ -9,7 +9,7 @@ object Constants {
   @inline final val DIMENSION = 2
 
   @inline var N_OBJECTS = 1000
-  @inline final val N_POINTS = 10
+  @inline var N_POINTS = 10
 
   @inline val MIN_DATASPACE = 0
   @inline val MAX_DATASPACE = 10000
@@ -29,4 +29,7 @@ object Constants {
   // 1 : anticorrelated
   // 2 : correlated
   // 3 : independence
+
+  @inline var ENV: String = "GENERATE"
+  // "TESTING"
 }

@@ -78,7 +78,7 @@ object Dataset {
     a
   }
 
-  def readPartialNode(): List[RawNode] = {
+  def readNodePartial(): List[RawNode] = {
     val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
 
     lines.foreach { l =>
@@ -87,7 +87,7 @@ object Dataset {
       val lon = lineArray(1).toDouble
       val lat = lineArray(2).toDouble
 
-      if (lon > -120 & lat > 37) {
+      if (lon > -120 & lat < 37) {
         this.addNode(RawNode(nodeId, lon, lat))
       }
     }

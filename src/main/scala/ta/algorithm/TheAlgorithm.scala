@@ -118,10 +118,10 @@ object TheAlgorithm {
             //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
             //println("    distance node " + currentNodeId + ": " + distance)
             //println("    insert object " + rawObject.id + " to node " + currentNodeId)
-            insertToNode(currentNode, rawObject, distance, rect)
+            insertToNode(grid, currentNode, rawObject, distance, rect)
           case ExpiredObject(objectId) =>
             //println("    delete object " + rawObject + " from node " + currentNodeId)
-            deleteFromNode(currentNode, objectId, rect)
+            deleteFromNode(grid, currentNode, objectId, rect)
         }
 
         tempGraph.updateNode(updatedNode)
@@ -164,7 +164,10 @@ object TheAlgorithm {
     }
 
 //    computeTurningPoint(tempGraph.graph)
-    computeTurningPoint(tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes)
+    if (ENV == "TESTING") {
+      computeTurningPoint(grid, tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes)
+    }
+
     grid
 //    updateGrid(grid, tempGraph.graph)
   }
@@ -175,14 +178,14 @@ object TheAlgorithm {
     grid
   }
 
-  def computeTurningPoint(edges: mutable.Map[Int, Edge], nodes: mutable.Map[Int, Node], updatedNodes: Set[Int]): Unit = {
+  def computeTurningPoint(grid: Grid, edges: mutable.Map[Int, Edge], nodes: mutable.Map[Int, Node], updatedNodes: Set[Int]): Unit = {
     edges.values
       .filter(e => updatedNodes.contains(e.i) | updatedNodes.contains(e.j))
       .foreach { e =>
         val nodeS = nodes(e.i)
         val nodeE = nodes(e.j)
 
-        processLandmark(nodeS, e, nodeE)
+        processLandmark(grid, nodeS, e, nodeE)
       }
   }
 
@@ -215,14 +218,14 @@ object TheAlgorithm {
     newTree
   }
 
-  def deleteFromNode(currentNode: Node, objectId: Int, rect: Rect2d): Node = {
+  def deleteFromNode(grid: Grid, currentNode: Node, objectId: Int, rect: Rect2d): Node = {
     val objectMaybe = currentNode.objects.find(_.id == objectId)
 
     if (objectMaybe.isEmpty) {
       return currentNode
     }
 
-    val toBeDeletedPoints = objectMaybe.get.points
+    val toBeDeletedPoints = objectMaybe.get.points(grid)
 
     for (point <- toBeDeletedPoints) {
       currentNode.tree.remove(point)
@@ -252,7 +255,7 @@ object TheAlgorithm {
     Node(currentNode.id, currentNode.x, currentNode.y, currentNode.tree, newObjects)
   }
 
-  def insertToNode(node: Node,
+  def insertToNode(grid: Grid, node: Node,
                    rawObject: RawObject,
                    distance: Double,
                    rect: Rect2d): Node = {
@@ -264,12 +267,12 @@ object TheAlgorithm {
 
     val updatedOverlappedObjects = overlappedObjects.map(q => {
       val ddrRect = rect.getDDR.asInstanceOf[Rect2d]
-      val qRect = createRect(q.points)
+      val qRect = q.rect
 
       if (ddrRect.contains(qRect) & distance < q.distance) {
         //println("      mark " + q.id + " as impossible")
         // Object is impossible
-        Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance, q.position)
+        Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.rect, q.distance, q.position)
       } else {
 //        rawObject.points.foreach(p => node.tree.add(p))
         val objProb = getDominationProbability(node.tree, ddrRect, q.id)
@@ -278,13 +281,17 @@ object TheAlgorithm {
         if (objProb > (1 - P_THRESHOLD) & distance < q.distance) {
           //println("        mark " + q.id + " as impossible")
           // Object is impossible
-          Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.points, q.distance, q.position)
+          Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.rect, q.distance, q.position)
         } else {
 //          rawObject.points.foreach(p => node.tree.add(p))
-          val skyProb = SkyPrX(node.tree, q.id)
+          val skyProb = if (ENV == "GENERATE") {
+            0.0
+          } else {
+            SkyPrX(node.tree, q.id)
+          }
 //          rawObject.points.foreach(p => node.tree.remove(p))
           //println("      SkyProb object " + q.id + " = " + skyProb)
-          Object(q.id, q.edgeId, skyProb, q.isImpossible, node.id, q.points, q.distance, q.position)
+          Object(q.id, q.edgeId, skyProb, q.isImpossible, node.id, q.rect, q.distance, q.position)
         }
       }
     })
@@ -298,10 +305,15 @@ object TheAlgorithm {
         o
     })
 
-    val skyProbU = SkyPrX(node.tree, rawObject.id)
+    val skyProbU = if (ENV == "GENERATE") {
+      0.0
+    } else {
+      SkyPrX(node.tree, rawObject.id)
+    }
+
     //println("    SkyProb incoming object " + rawObject.id + " = " + skyProbU)
     val finalObjects = updatedObjects +
-        Object(rawObject.id, rawObject.edgeId, skyProbU, isImpossible = false, node.id, rawObject.points, distance, rawObject.position)
+        Object(rawObject.id, rawObject.edgeId, skyProbU, isImpossible = false, node.id, rect, distance, rawObject.position)
     Node(node.id, node.x, node.y, node.tree, finalObjects)
   }
 

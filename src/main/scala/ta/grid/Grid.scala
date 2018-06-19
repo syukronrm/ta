@@ -28,8 +28,12 @@ class Grid extends Cloneable {
     this.nodes = this.nodes.par.map { node =>
       println(node.id)
       node.objects = node.objects.map { o =>
-        o.skyProb = SkyPrX(node.tree, o.id)
-        o
+        if (o.isImpossible) {
+          o
+        } else {
+          o.skyProb = SkyPrX(node.tree, o.id)
+          o
+        }
       }
 
       node

@@ -1,3 +1,5 @@
+nPoints = 10
+
 Jumlah objek:
 5k 6.553 o/n 0.0307 s/op 43820244 B/op
 10k 13.370812299219825 o/n 0.0485 s/op 77673271 B/op

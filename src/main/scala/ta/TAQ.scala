@@ -198,18 +198,21 @@ class BenchmarkStream {
     _grid
   }
 
-  // @Param(Array("25000", "35000", "50000", "100000"))
+  // @Param(Array("5000", "10000", "20000"))
   var nObjects: Int = 10000
 
   // 0.5km, 2.5km, 5km, 10km, 15km
-  // @Param(Array("1", "2", "3"))
-  var distance: Double = 0.5
+  // @Param(Array("0.5", "1", "2", "3"))
+  var distance: Double = 1
 
-  // @Param(Array("32", "64", "128", "256", "512", "1024"))
+  @Param(Array("32", "64", "128", "256", "512"))
   var gridCell: Int = 128
 
-  // @Param(Array("10", "100", "500", "1000", "5000"))
-  var nPoints: Int = 100
+  // @Param(Array("10", "50", "100", "500", "1000"))
+  var nPoints: Int = 50
+
+  // @Param(Array("1", "2", "3"))
+  var kindOfData: Int = 3
 
   @Setup
   def setup(): Unit = {
@@ -218,6 +221,7 @@ class BenchmarkStream {
     Constants.PERCENT_DISTANCE = distance
     Constants.N_GRID_CELL = gridCell
     Constants.N_POINTS = nPoints
+    Constants.KIND_OF_DATA = kindOfData
 
     grid = runInitial()
 

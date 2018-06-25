@@ -56,7 +56,7 @@ public final class Rect2d implements HyperRect {
             maxX = p2.x;
         } else {
             minX = p2.x;
-            maxX = p2.x;
+            maxX = p1.x;
         }
 
         if(p1.y < p2.y) {
@@ -64,7 +64,7 @@ public final class Rect2d implements HyperRect {
             maxY = p2.y;
         } else {
             minY = p2.y;
-            maxY = p2.y;
+            maxY = p1.y;
         }
 
         min = new Point2d(minX, minY);

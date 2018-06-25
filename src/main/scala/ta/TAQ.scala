@@ -281,10 +281,10 @@ class BenchmarkStream {
   // @Param(Array("32", "64", "128", "256", "512"))
   var gridCell: Int = 256
 
-  @Param(Array("150", "200"))
+//  @Param(Array("150", "200"))
   var nPoints: Int = 50
 
-  // @Param(Array("1", "2", "3"))
+  @Param(Array("1", "2", "3"))
   var kindOfData: Int = 3
 
   @Setup

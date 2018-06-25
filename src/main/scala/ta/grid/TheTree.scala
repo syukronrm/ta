@@ -30,4 +30,8 @@ object TheTree {
   def createTree2D(): RTree[Point2d] = {
     new RTree(new Point2d.Builder(), 2, 8, RTree.Split.AXIAL)
   }
+
+  def createTree3D(): RTree[Point3d] = {
+    new RTree(new Point3d.Builder(), 2, 8, RTree.Split.AXIAL)
+  }
 }

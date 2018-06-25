@@ -7,7 +7,7 @@ import ta.graph.TempGraph
 import ta.grid._
 import ta.stream.{ExpiredObject, RawObject, Stream}
 import ta.Constants._
-import ta.geometry.{Point2d, Rect2d, Rect3d}
+import ta.geometry.{Point3d, Rect3d}
 import ta.grid.Rect._
 import ta.algorithm.TurningPoint._
 
@@ -15,9 +15,8 @@ import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
 import scala.collection.mutable
 import scala.concurrent.Future
-import scala.concurrent.{Future, Await}
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
-
 import scala.concurrent.ExecutionContext.Implicits.global
 
 case class NodeQueue(nodeId: Int, distance: Double)
@@ -47,8 +46,8 @@ object TheAlgorithm {
         _rawObject
     }
 
-    val objectList: java.util.List[Point2d] = rawObject.points.toList.asJava
-    val rect = new Rect2d(objectList)
+    val objectList: java.util.List[Point3d] = rawObject.points.toList.asJava
+    val rect = new Rect3d(objectList)
 
     var addedGrid: Set[GridLocation] = Set()
 
@@ -212,8 +211,8 @@ object TheAlgorithm {
 //    })
 //  }
 
-  def removePoints(tree: RTree[Point2d], points: List[Point2d]): RTree[Point2d] = {
-    val newTree = new RTree(new Point2d.Builder(), 2, 8, RTree.Split.AXIAL)
+  def removePoints(tree: RTree[Point3d], points: List[Point3d]): RTree[Point3d] = {
+    val newTree = new RTree(new Point3d.Builder(), 2, 8, RTree.Split.AXIAL)
     tree.forEach(p => {
       if (!points.contains(p))
         newTree.add(p)
@@ -222,7 +221,7 @@ object TheAlgorithm {
     newTree
   }
 
-  def deleteFromNode(grid: Grid, currentNode: Node, objectId: Int, rect: Rect2d): Node = {
+  def deleteFromNode(grid: Grid, currentNode: Node, objectId: Int, rect: Rect3d): Node = {
     val objectMaybe = currentNode.objects.find(_.id == objectId)
 
     if (objectMaybe.isEmpty) {
@@ -262,7 +261,7 @@ object TheAlgorithm {
   def insertToNode(grid: Grid, node: Node,
                    rawObject: RawObject,
                    distance: Double,
-                   rect: Rect2d): Node = {
+                   rect: Rect3d): Node = {
 
     val overlappedObjects = findPDROverlappedObjects(node, rect)
     //println("    overlapped objects:")
@@ -270,7 +269,7 @@ object TheAlgorithm {
     rawObject.points.foreach(p => node.tree.add(p))
 
     val updatedOverlappedObjects = overlappedObjects.map(q => {
-      val ddrRect = rect.getDDR.asInstanceOf[Rect2d]
+      val ddrRect = rect.getDDR.asInstanceOf[Rect3d]
       val qRect = q.rect
 
       if (ddrRect.contains(qRect) & distance < q.distance) {
@@ -321,8 +320,8 @@ object TheAlgorithm {
     Node(node.id, node.x, node.y, node.tree, finalObjects)
   }
 
-  def SkyPrX(tree: RTree[Point2d], objectId: Int): Double = {
-    val X = scala.collection.mutable.Set[Point2d]()
+  def SkyPrX(tree: RTree[Point3d], objectId: Int): Double = {
+    val X = scala.collection.mutable.Set[Point3d]()
     tree.forEach(p => {
       if (p.o == objectId) {
         X.add(p)
@@ -335,8 +334,8 @@ object TheAlgorithm {
       .sum
   }
 
-  def SkyPrx(tree: RTree[Point2d], X: mutable.Set[Point2d], x: Point2d): Double = {
-    val entries = mutable.Set[Point2d]()
+  def SkyPrx(tree: RTree[Point3d], X: mutable.Set[Point3d], x: Point3d): Double = {
+    val entries = mutable.Set[Point3d]()
     tree.forEach(p => entries.add(p))
 
     entries
@@ -348,44 +347,44 @@ object TheAlgorithm {
       .product
   }
 
-  def PrYnotdominatex(Y: List[Point2d], x: Point2d): Double = {
+  def PrYnotdominatex(Y: List[Point3d], x: Point3d): Double = {
     Y.filter(y => isyNotDominatex(y, x))
       .foldLeft(0.0)((acc, e) => acc + e.p)
   }
 
-  def isyNotDominatex(y: Point2d, x: Point2d): Boolean = {
+  def isyNotDominatex(y: Point3d, x: Point3d): Boolean = {
     if (y.x <= x.x & y.y <= y.x) {
       false
     } else {
       true
     }
 
-//    val Y = new Rect2d(y)
-//    val X = new Rect2d(x)
+//    val Y = new Rect3d(y)
+//    val X = new Rect3d(x)
 //    if (Y.getDDR.contains(X))
 //      false
 //    else
 //      true
   }
 
-  def getDominationProbability(tree: RTree[Point2d], ddrRect: Rect2d, objectId: Int): Double = {
-    val result = new Array[Point2d](N_POINTS)
+  def getDominationProbability(tree: RTree[Point3d], ddrRect: Rect3d, objectId: Int): Double = {
+    val result = new Array[Point3d](N_POINTS)
 
     tree.search(ddrRect, result)
 
     result
-        .filter(_.isInstanceOf[Point2d])
+        .filter(_.isInstanceOf[Point3d])
         .filter(_.o == objectId)
         .foldLeft(0.0)((acc, e) => acc + e.p)
   }
 
-  def findPDROverlappedObjects(node: Node, rect: Rect2d): Set[Object] = {
+  def findPDROverlappedObjects(node: Node, rect: Rect3d): Set[Object] = {
     val tree = node.tree
-    val PDRBox: Rect2d = rect.getPDR.asInstanceOf[Rect2d]
-    val overlappedPoints: Array[Point2d] = new Array[Point2d](N_POINTS)
+    val PDRBox: Rect3d = rect.getPDR.asInstanceOf[Rect3d]
+    val overlappedPoints: Array[Point3d] = new Array[Point3d](N_POINTS)
     tree.search(PDRBox, overlappedPoints)
 
-    val objectIds = overlappedPoints.toList.filter(_.isInstanceOf[Point2d]).map(_.o).toSet
+    val objectIds = overlappedPoints.toList.filter(_.isInstanceOf[Point3d]).map(_.o).toSet
     //println("    rect " + rect.toString)
     //println("    PDRBox " + PDRBox.toString + " objects IDs = " + objectIds.toString)
     val objects = objectIds.map(id => {

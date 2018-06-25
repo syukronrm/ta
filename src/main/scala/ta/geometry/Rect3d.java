@@ -172,27 +172,86 @@ public final class Rect3d implements HyperRect {
 
     @Override
     public HyperRect getPDR() {
-        return null;
+        final double minX = min.x;
+        final double minY = min.y;
+        final double minZ = min.z;
+        final double maxX = Double.MAX_VALUE;
+        final double maxY = Double.MAX_VALUE;
+        final double maxZ = Double.MAX_VALUE;
+
+        return new Rect3d(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     @Override
     public HyperRect getDDR() {
-        return null;
+        final double minX = max.x;
+        final double minY = max.y;
+        final double minZ = max.z;
+        final double maxX = Double.MAX_VALUE;
+        final double maxY = Double.MAX_VALUE;
+        final double maxZ = Double.MAX_VALUE;
+
+        return new Rect3d(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     @Override
     public HyperRect getPDD() {
-        return null;
+        final double minX = Double.MIN_VALUE;
+        final double minY = Double.MIN_VALUE;
+        final double minZ = Double.MIN_VALUE;
+        final double maxX = max.x;
+        final double maxY = max.y;
+        final double maxZ = max.z;
+
+        return new Rect3d(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     @Override
     public HyperRect getDDD() {
-        return null;
+        final double minX = Double.MIN_VALUE;
+        final double minY = Double.MIN_VALUE;
+        final double minZ = Double.MIN_VALUE;
+        final double maxX = min.x;
+        final double maxY = min.y;
+        final double maxZ = min.z;
+
+        return new Rect3d(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     @Override
-    public void setPoints(List list) {
+    public void setPoints(List points) {
+        double minX, minY, minZ, maxX, maxY, maxZ;
+        minX = Double.MAX_VALUE;
+        minY = Double.MAX_VALUE;
+        minZ = Double.MAX_VALUE;
+        maxX = Double.MIN_VALUE;
+        maxY = Double.MIN_VALUE;
+        maxZ = Double.MIN_VALUE;
 
+        for (Object point : points) {
+            Point3d p = (Point3d) point;
+
+            if (p.x < minX) {
+                minX = p.x;
+            } else if (p.x > maxX) {
+                maxX = p.x;
+            }
+
+            if (p.y < minY) {
+                minY = p.y;
+            } else if (p.y > maxY) {
+                maxY = p.y;
+            }
+
+            if (p.z < minZ) {
+                minZ = p.z;
+            } else if (p.z > maxZ) {
+                maxZ = p.z;
+            }
+        }
+
+        min = new Point3d(minX, minY, minZ);
+        max = new Point3d(maxX, maxY, maxZ);
     }
 
     @Override

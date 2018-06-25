@@ -32,14 +32,15 @@ public final class Point3d implements HyperPoint {
     public final static int Y = 1;
     public final static int Z = 2;
 
+    public final double x, y, z, p;
+    public final int o;
 
-    final double x, y, z, p;
-
-    public Point3d(final double x, final double y, final double z, final double p) {
+    public Point3d(final double x, final double y, final double z, final double p, final int o) {
         this.x = x;
         this.y = y;
         this.z = z;
         this.p = p;
+        this.o = o;
     }
 
     public Point3d(final double x, final double y, final double z) {
@@ -47,6 +48,7 @@ public final class Point3d implements HyperPoint {
         this.y = y;
         this.z = z;
         this.p = 0;
+        this.o = 0;
     }
 
     @Override
@@ -99,14 +101,18 @@ public final class Point3d implements HyperPoint {
         final Point3d p = (Point3d)o;
         return RTree.isEqual(x, p.x) &&
                 RTree.isEqual(y, p.y) &&
-                RTree.isEqual(z, p.z);
+                RTree.isEqual(z, p.z) &&
+                RTree.isEqual(this.p, p.p) &&
+                this.o == p.p;
     }
 
     @Override
     public int hashCode() {
         return Double.hashCode(x) ^
                 31*Double.hashCode(y) ^
-                31*31*Double.hashCode(z);
+                31*31*Double.hashCode(z) ^
+                31*31*31*Double.hashCode(p) ^
+                31*31*Double.hashCode(o);
     }
 
     public final static class Builder implements RectBuilder<Point3d> {

@@ -99,7 +99,7 @@ class Grid extends Cloneable {
   // node
   def addRawNodes(nodes: Set[RawNode]): Unit = {
     nodes.map(raw => {
-      val emptyTree = createTree2D()
+      val emptyTree = createTree3D()
       Node(raw.id, raw.x, raw.y, emptyTree, Set())
     }).foreach(addNode)
   }

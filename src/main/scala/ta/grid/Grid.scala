@@ -1,5 +1,7 @@
 package ta.grid
 
+import java.io.FileWriter
+
 import collection.spatial.{HyperPoint, RTree, RectBuilder}
 
 import scala.collection.immutable.Set
@@ -10,8 +12,8 @@ import ta.geometry.{Point2d, Point3d, Rect2d}
 import TheTree._
 import ta.algorithm.TheAlgorithm.SkyPrX
 import com.rits.cloning.Cloner
-
 import ta.grid.Rect._
+import ta.Constants._
 
 import scala.collection.parallel.ParSet
 import scala.math.{floor, round}
@@ -23,6 +25,49 @@ class Grid extends Cloneable {
   private var edges: Set[Edge] = Set()
   var nodes: Set[Node] = Set()
   private var rawObjects: Set[RawObject] = Set()
+
+  def createDataNaive = {
+    val filename = "n"+N_OBJECTS+"np"+N_POINTS+"g"+N_GRID_CELL+"d"+PERCENT_DISTANCE+"p"+P_THRESHOLD+"data"+KIND_OF_DATA
+    val fwclear = new FileWriter("import/grid-obj-"+filename+".txt")
+    fwclear.close()
+    rawObjects.foreach { ro =>
+      /*
+        id edgeId pos sizePoints
+        foreach sizePoints
+          px py pp po
+      */
+      val fw = new FileWriter("import/grid-obj-"+filename+".txt", true)
+      fw.write(
+        ro.id + " " + ro.edgeId + " " + ro.position + " " + ro.points.size + " "
+      )
+      var strp = ""
+      ro.points.foreach { p =>
+        strp += p.x + " " + p.y + " " + p.p + " " + p.o + " "
+      }
+      fw.write(strp + "\n")
+      fw.close()
+    }
+
+    val fw2clear = new FileWriter("import/grid-node-"+filename+".txt")
+    fw2clear.close()
+    nodes.foreach { n =>
+      val fw2 = new FileWriter("import/grid-node-"+filename+".txt", true)
+      /*
+        nodeID objectSize
+        foreach objectSize
+          id distance skyprob edgeId pos
+       */
+      fw2.write(
+        n.id + " " + n.objects.size + " "
+      )
+      var str = ""
+      n.objects.foreach { o =>
+        str += o.id + " " + o.distance + " " + o.skyProb + " " + o.edgeId + " " + o.position + " "
+      }
+      fw2.write(str + "\n")
+      fw2.close()
+    }
+  }
 
   def updateAllSkyProb(): Unit = {
     this.nodes = this.nodes.par.map { node =>

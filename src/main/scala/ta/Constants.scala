@@ -9,7 +9,7 @@ object Constants {
   @inline final val DIMENSION = 2
 
   @inline var N_OBJECTS = 1000
-  @inline var N_POINTS = 10
+  @inline var N_POINTS = 100
 
   @inline val MIN_DATASPACE = 0
   @inline val MAX_DATASPACE = 10000
@@ -18,7 +18,7 @@ object Constants {
 
   @inline var PERCENT_DISTANCE = 0.5
 
-  @inline var TIME_EXPIRATION = 100
+  @inline var TIME_EXPIRATION = 1000
 
   @inline val MIN_EDGE_ID = 0
   @inline val MAX_EDGE_ID = 21692

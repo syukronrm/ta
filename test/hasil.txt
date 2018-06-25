@@ -17,5 +17,31 @@ Distance:
 2 31.506195502524093 o/n 0.2005 s/op 365523289 B/op
 3 56.7586048646168 o/n 0.667 s/op 3264773509 B/op
 
+nPoints = 50
+distance = 1
+
+nObjects
+0.1k 0.027 s/op 16.179 MB/op
+1k 0.054 s/op 41.7 MB/op
+5k 0.24 s/op 328 MB/op
+10k 0.527 s/op 367 MB/op
+20k 1.062 s/op 375 MB/op
+
+Distance
+0.1 0.009 s/op 12.5 MB/op
+0.5 0.052 s/op 122.7 MB/op
+1 0.24 s/op 328 MB/op
+2 1.592 s/op 5932.6 MB/op
+3 9.667 s/op 37507 MB/op
+
+NPoints
+10 0.033 s/op 41.4 MB/op
+50 0.229 s/op 392.54 MB/op 
+100 0.979 s/op 4874.9 MB/op
+200 5.736 s/op 32760 MB/op
+500 OutOfMemory at interation 3200
+1000 OutOfMemory at iteration 1500
+
+
 
 

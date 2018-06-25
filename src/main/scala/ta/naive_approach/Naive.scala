@@ -1,5 +1,7 @@
 package ta.naive_approach
 
+import java.util.Scanner
+
 import ta.geometry.{Point2d, Rect2d}
 import ta.Constants._
 import ta.algorithm.TheAlgorithm.{SkyPrX, getDominationProbability}
@@ -7,6 +9,7 @@ import collection.spatial.RTree
 import com.rits.cloning.Cloner
 import scalax.collection.immutable.Graph
 import scalax.collection.edge.WLkUnDiEdge
+import scalax.collection.GraphPredef._, scalax.collection.GraphEdge._
 import scalax.collection.edge.Implicits._
 import ta.{RawEdge, RawNode}
 import ta.algorithm.TurningPoint.processLandmark
@@ -20,7 +23,7 @@ case class Edge(id: Int, i: Int, j: Int, length: Double)
 case class Node(id: Int, x: Double, y: Double)
 //case class RawObject(id: Int, edgeId: Int, position: Double, points: List[Point2d])
 
-case class Object(id: Int, distance: Double, skyProb: Double, points: List[Point2d], edgeId: Int, position: Double)
+case class Object(id: Int, distance: Double, skyProb: Double, edgeId: Int, position: Double)
 
 case class TP(dStart: Double, dEnd: Double, SP: Set[Object])
 
@@ -28,7 +31,7 @@ class TempGraph {
   var graph: Graph[Int, WLkUnDiEdge] = Graph()
 
   def addNode(i: Int) = {
-    graph = graph ++ Graph(i)
+    graph = graph + i
   }
 
   def loadGraph(edges: Set[Edge]): Unit = {
@@ -102,6 +105,59 @@ class Naive {
   var nodeWithObjects: mutable.Map[Int, mutable.Map[Int, Object]] = mutable.Map.empty[Int, mutable.Map[Int, Object]]
 
   var graph = new TempGraph()
+
+  def readObject(filename: String) = {
+    val file = scala.io.Source.fromFile("import/grid-obj-"+filename+".txt")
+    for (line <- file.getLines()) {
+      val scanner = new Scanner(line)
+      val objId = scanner.nextInt()
+      val edgeId = scanner.nextInt()
+      val pos = scanner.nextDouble()
+
+      var points: List[Point2d] = List()
+      var sizePoints = scanner.nextInt()
+
+      (1 to sizePoints).foreach { _ =>
+        points :+= new Point2d(
+          scanner.nextDouble(),
+          scanner.nextDouble(),
+          scanner.nextDouble(),
+          scanner.nextInt()
+        )
+      }
+
+      this.objects += RawObject(objId, edgeId, pos, points)
+    }
+  }
+
+  def readNode(filename: String) = {
+    val file = scala.io.Source.fromFile("import/grid-node-"+filename+".txt")
+    for (line <- file.getLines()) {
+      val scanner = new Scanner(line)
+      val nodeId = scanner.nextInt()
+
+      var sizeObj = scanner.nextInt()
+      var objects: mutable.Map[Int, Object] = mutable.Map()
+      (1 to sizeObj).foreach { _ =>
+        val obj = Object(
+          scanner.nextInt(),
+          scanner.nextDouble(),
+          scanner.nextDouble(),
+          scanner.nextInt,
+          scanner.nextDouble()
+        )
+
+        objects(obj.id) = obj
+      }
+      nodeWithObjects(nodeId) = objects
+    }
+  }
+
+  def readDataGrid = {
+    val filename = "n"+N_OBJECTS+"np"+N_POINTS+"g"+N_GRID_CELL+"d"+PERCENT_DISTANCE+"p"+P_THRESHOLD+"data"+KIND_OF_DATA
+    readNode(filename)
+    readObject(filename)
+  }
 
   def cloneMe() = {
     val cloner = new Cloner()
@@ -181,11 +237,11 @@ class Naive {
           objectMaybe match {
             case Some(nodeObjects) =>
               val newMap = nodeObjects +
-                (obj.id -> Object(obj.id, nodeIdAndDistance._2, 0.0, obj.points, obj.edgeId, obj.position))
+                (obj.id -> Object(obj.id, nodeIdAndDistance._2, 0.0, obj.edgeId, obj.position))
               nodeWithObjects(nodeIdAndDistance._1) = newMap
             case None =>
               nodeWithObjects +=
-                (nodeIdAndDistance._1 -> mutable.Map(obj.id -> Object(obj.id, nodeIdAndDistance._2, 0.0, obj.points, obj.edgeId, obj.position)))
+                (nodeIdAndDistance._1 -> mutable.Map(obj.id -> Object(obj.id, nodeIdAndDistance._2, 0.0, obj.edgeId, obj.position)))
           }
         }
 
@@ -295,7 +351,7 @@ class Naive {
       .filter(_.edgeId == edge.id)
       .toList
       .map(o => {
-        Object(o.id, edge.length * o.position, 100, o.points, o.edgeId, o.position)
+        Object(o.id, edge.length * o.position, 100, o.edgeId, o.position)
       })
       .toSet
   }
@@ -318,8 +374,10 @@ class Naive {
 
     def findDominatedObjects(obj: Object, objects: Set[Object]): Set[Object] = {
       objects.filter(o => {
-        val pointsL = obj.points
-        val points = o.points
+//        val pointsL = obj.points
+//        val points = o.points
+        val pointsL = this.objects.find(_.id == obj.id).get.points
+        val points = this.objects.find(_.id == o.id).get.points
 
         val tree = new RTree(new Point2d.Builder(), 2, 8, RTree.Split.AXIAL)
 

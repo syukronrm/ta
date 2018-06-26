@@ -31,22 +31,25 @@ public final class Point4d implements HyperPoint {
     public final static int X = 0;
     public final static int Y = 1;
     public final static int Z = 2;
+    public final static int A = 3;
 
-    public final double x, y, z, p;
+    public final double x, y, z, a, p;
     public final int o;
 
-    public Point4d(final double x, final double y, final double z, final double p, final int o) {
+    public Point4d(final double x, final double y, final double z, final double a, final double p, final int o) {
         this.x = x;
         this.y = y;
         this.z = z;
+        this.a = a;
         this.p = p;
         this.o = o;
     }
 
-    public Point4d(final double x, final double y, final double z) {
+    public Point4d(final double x, final double y, final double z, final double a) {
         this.x = x;
         this.y = y;
         this.z = z;
+        this.a = a;
         this.p = 0;
         this.o = 0;
     }
@@ -64,6 +67,8 @@ public final class Point4d implements HyperPoint {
             return y;
         } else if(d==Z) {
             return z;
+        } else if(d==A) {
+            return a;
         } else {
             throw new IllegalArgumentException("Invalid dimension");
         }
@@ -76,7 +81,8 @@ public final class Point4d implements HyperPoint {
         final double dx = p2.x-x;
         final double dy = p2.y-y;
         final double dz = p2.z-z;
-        return Math.sqrt(dx*dx + dy*dy + dz*dz);
+        final double da = p2.a-a;
+        return Math.sqrt(dx*dx + dy*dy + dz*dz + da*da);
     }
 
     @Override
@@ -88,6 +94,8 @@ public final class Point4d implements HyperPoint {
             return Math.abs(p2.y - y);
         } else if (d == Z) {
             return Math.abs(p2.z - z);
+        } else if (d == A) {
+            return Math.abs(p2.a - a);
         } else {
             throw new IllegalArgumentException("Invalid dimension");
         }
@@ -102,6 +110,7 @@ public final class Point4d implements HyperPoint {
         return RTree.isEqual(x, p.x) &&
                 RTree.isEqual(y, p.y) &&
                 RTree.isEqual(z, p.z) &&
+                RTree.isEqual(a, p.a) &&
                 RTree.isEqual(this.p, p.p) &&
                 this.o == p.p;
     }
@@ -111,6 +120,7 @@ public final class Point4d implements HyperPoint {
         return Double.hashCode(x) ^
                 31*Double.hashCode(y) ^
                 31*31*Double.hashCode(z) ^
+                31*31*31*Double.hashCode(a) ^
                 31*31*31*Double.hashCode(p) ^
                 31*31*Double.hashCode(o);
     }

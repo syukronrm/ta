@@ -8,7 +8,7 @@ import scala.collection.immutable.Set
 import ta.stream.RawObject
 import ta.Constants._
 import ta.{RawEdge, RawNode}
-import ta.geometry.{Point2d, Point3d, Rect2d}
+import ta.geometry.{Point2d, Point4d, Rect2d}
 import TheTree._
 import ta.algorithm.TheAlgorithm.SkyPrX
 import com.rits.cloning.Cloner
@@ -99,7 +99,7 @@ class Grid extends Cloneable {
   // node
   def addRawNodes(nodes: Set[RawNode]): Unit = {
     nodes.map(raw => {
-      val emptyTree = createTree3D()
+      val emptyTree = createTree4D()
       Node(raw.id, raw.x, raw.y, emptyTree, Set())
     }).foreach(addNode)
   }

@@ -2,9 +2,9 @@ package ta.grid
 
 import collection.spatial.{HyperPoint, HyperRect, RTree}
 import ta.Constants._
-import ta.geometry.{Point2d, Point3d}
-import scala.collection.JavaConverters._
+import ta.geometry.{Point2d, Point3d, Point4d}
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
 import archery._
 import scalax.collection.edge.{WLkUnDiEdge, WUnDiEdge}
@@ -33,5 +33,9 @@ object TheTree {
 
   def createTree3D(): RTree[Point3d] = {
     new RTree(new Point3d.Builder(), 2, 8, RTree.Split.AXIAL)
+  }
+
+  def createTree4D(): RTree[Point4d] = {
+    new RTree(new Point4d.Builder(), 2, 8, RTree.Split.AXIAL)
   }
 }

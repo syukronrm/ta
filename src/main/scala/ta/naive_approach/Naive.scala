@@ -2,7 +2,7 @@ package ta.naive_approach
 
 import java.util.Scanner
 
-import ta.geometry.{Point3d, Rect3d}
+import ta.geometry.{Point4d, Rect4d}
 import ta.Constants._
 import ta.algorithm.TheAlgorithm.{SkyPrX, getDominationProbability}
 import collection.spatial.RTree
@@ -22,7 +22,7 @@ import ta.stream._
 
 case class Edge(id: Int, i: Int, j: Int, length: Double)
 case class Node(id: Int, x: Double, y: Double)
-//case class RawObject(id: Int, edgeId: Int, position: Double, points: List[Point3d])
+//case class RawObject(id: Int, edgeId: Int, position: Double, points: List[Point4d])
 
 case class Object(id: Int, distance: Double, skyProb: Double, edgeId: Int, position: Double)
 
@@ -115,11 +115,12 @@ class Naive {
       val edgeId = scanner.nextInt()
       val pos = scanner.nextDouble()
 
-      var points: List[Point3d] = List()
+      var points: List[Point4d] = List()
       var sizePoints = scanner.nextInt()
 
       (1 to sizePoints).foreach { _ =>
-        points :+= new Point3d(
+        points :+= new Point4d(
+          scanner.nextDouble(),
           scanner.nextDouble(),
           scanner.nextDouble(),
           scanner.nextDouble(),
@@ -328,7 +329,7 @@ class Naive {
       a.get.points
     }
 
-    var tree = new RTree(new Point3d.Builder(), 2, 8, RTree.Split.AXIAL)
+    var tree = new RTree(new Point4d.Builder(), 2, 8, RTree.Split.AXIAL)
 
     points.foreach { p =>
       tree.add(p)
@@ -381,12 +382,12 @@ class Naive {
         val pointsL = this.objects.find(_.id == obj.id).get.points
         val points = this.objects.find(_.id == o.id).get.points
 
-        val tree = new RTree(new Point3d.Builder(), 2, 8, RTree.Split.AXIAL)
+        val tree = new RTree(new Point4d.Builder(), 2, 8, RTree.Split.AXIAL)
 
         pointsL.foreach(p => tree.add(p))
         points.foreach(p => tree.add(p))
 
-        val ddrRect = new Rect3d(pointsL.asJava).getDDR.asInstanceOf[Rect3d]
+        val ddrRect = new Rect4d(pointsL.asJava).getDDR.asInstanceOf[Rect4d]
 
         val objProb = getDominationProbability(tree, ddrRect, o.id)
 

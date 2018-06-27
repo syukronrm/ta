@@ -2,7 +2,7 @@ package ta.naive_approach
 
 import java.util.Scanner
 
-import ta.geometry.{Point4d, Rect4d}
+import ta.geometry.{Point4d, Point5d, Rect4d, Rect5d}
 import ta.Constants._
 import ta.algorithm.TheAlgorithm.{SkyPrX, getDominationProbability}
 import collection.spatial.RTree
@@ -115,11 +115,12 @@ class Naive {
       val edgeId = scanner.nextInt()
       val pos = scanner.nextDouble()
 
-      var points: List[Point4d] = List()
+      var points: List[Point5d] = List()
       var sizePoints = scanner.nextInt()
 
       (1 to sizePoints).foreach { _ =>
-        points :+= new Point4d(
+        points :+= new Point5d(
+          scanner.nextDouble(),
           scanner.nextDouble(),
           scanner.nextDouble(),
           scanner.nextDouble(),
@@ -157,7 +158,7 @@ class Naive {
   }
 
   def readDataGrid = {
-    val filename = "n"+N_OBJECTS+"np"+N_POINTS+"g"+N_GRID_CELL+"d"+PERCENT_DISTANCE+"p"+P_THRESHOLD+"data"+KIND_OF_DATA
+    val filename = "n"+N_OBJECTS+"np"+N_POINTS+"g"+N_GRID_CELL+"d"+PERCENT_DISTANCE+"p"+P_THRESHOLD+"data"+KIND_OF_DATA+"dim"+DIMENSION
     readNode(filename)
     readObject(filename)
   }
@@ -329,7 +330,7 @@ class Naive {
       a.get.points
     }
 
-    var tree = new RTree(new Point4d.Builder(), 2, 8, RTree.Split.AXIAL)
+    var tree = new RTree(new Point5d.Builder(), 2, 8, RTree.Split.AXIAL)
 
     points.foreach { p =>
       tree.add(p)
@@ -382,12 +383,12 @@ class Naive {
         val pointsL = this.objects.find(_.id == obj.id).get.points
         val points = this.objects.find(_.id == o.id).get.points
 
-        val tree = new RTree(new Point4d.Builder(), 2, 8, RTree.Split.AXIAL)
+        val tree = new RTree(new Point5d.Builder(), 2, 8, RTree.Split.AXIAL)
 
         pointsL.foreach(p => tree.add(p))
         points.foreach(p => tree.add(p))
 
-        val ddrRect = new Rect4d(pointsL.asJava).getDDR.asInstanceOf[Rect4d]
+        val ddrRect = new Rect5d(pointsL.asJava).getDDR.asInstanceOf[Rect5d]
 
         val objProb = getDominationProbability(tree, ddrRect, o.id)
 

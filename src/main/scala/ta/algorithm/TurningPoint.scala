@@ -47,12 +47,12 @@ object TurningPoint {
         val pointsL = dataPoints(obj.id)
         val points = dataPoints(o.id)
 
-        val tree = new RTree(new Point4d.Builder(), 2, 8, RTree.Split.AXIAL)
+        val tree = new RTree(new Point5d.Builder(), 2, 8, RTree.Split.AXIAL)
 
         pointsL.foreach(p => tree.add(p))
         points.foreach(p => tree.add(p))
 
-        val ddrRect = new Rect4d(pointsL.asJava).getDDR.asInstanceOf[Rect4d]
+        val ddrRect = new Rect5d(pointsL.asJava).getDDR.asInstanceOf[Rect5d]
 
         val objProb = getDominationProbability(tree, ddrRect, o.id)
 

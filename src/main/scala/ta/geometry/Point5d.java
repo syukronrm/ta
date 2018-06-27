@@ -27,36 +27,39 @@ import collection.spatial.HyperRect;
 import collection.spatial.RTree;
 import collection.spatial.RectBuilder;
 
-public final class Point4d implements HyperPoint {
+public final class Point5d implements HyperPoint {
     public final static int X = 0;
     public final static int Y = 1;
     public final static int Z = 2;
     public final static int A = 3;
+    public final static int B = 4;
 
-    public final double x, y, z, a, p;
+    public final double x, y, z, a, b, p;
     public final int o;
 
-    public Point4d(final double x, final double y, final double z, final double a, final double p, final int o) {
+    public Point5d(final double x, final double y, final double z, final double a, final double b, final double p, final int o) {
         this.x = x;
         this.y = y;
         this.z = z;
         this.a = a;
+        this.b = b;
         this.p = p;
         this.o = o;
     }
 
-    public Point4d(final double x, final double y, final double z, final double a) {
+    public Point5d(final double x, final double y, final double z, final double a, final double b) {
         this.x = x;
         this.y = y;
         this.z = z;
         this.a = a;
+        this.b = b;
         this.p = 0;
         this.o = 0;
     }
 
     @Override
     public int getNDim() {
-        return 4;
+        return 5;
     }
 
     @Override
@@ -69,6 +72,8 @@ public final class Point4d implements HyperPoint {
             return z;
         } else if(d==A) {
             return a;
+        } else if(d==B) {
+            return b;
         } else {
             throw new IllegalArgumentException("Invalid dimension");
         }
@@ -76,18 +81,19 @@ public final class Point4d implements HyperPoint {
 
     @Override
     public double distance(final HyperPoint p) {
-        final Point4d p2 = (Point4d)p;
+        final Point5d p2 = (Point5d)p;
 
         final double dx = p2.x-x;
         final double dy = p2.y-y;
         final double dz = p2.z-z;
         final double da = p2.a-a;
-        return Math.sqrt(dx*dx + dy*dy + dz*dz + da*da);
+        final double db = p2.b-b;
+        return Math.sqrt(dx*dx + dy*dy + dz*dz + da*da + db*db);
     }
 
     @Override
     public double distance(final HyperPoint p, final int d) {
-        final Point4d p2 = (Point4d)p;
+        final Point5d p2 = (Point5d)p;
         if(d == X) {
             return Math.abs(p2.x - x);
         } else if (d == Y) {
@@ -96,6 +102,8 @@ public final class Point4d implements HyperPoint {
             return Math.abs(p2.z - z);
         } else if (d == A) {
             return Math.abs(p2.a - a);
+        } else if (d == B) {
+            return Math.abs(p2.b - b);
         } else {
             throw new IllegalArgumentException("Invalid dimension");
         }
@@ -106,11 +114,12 @@ public final class Point4d implements HyperPoint {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        final Point4d p = (Point4d)o;
+        final Point5d p = (Point5d)o;
         return RTree.isEqual(x, p.x) &&
                 RTree.isEqual(y, p.y) &&
                 RTree.isEqual(z, p.z) &&
                 RTree.isEqual(a, p.a) &&
+                RTree.isEqual(b, p.b) &&
                 RTree.isEqual(this.p, p.p) &&
                 this.o == p.p;
     }
@@ -121,20 +130,21 @@ public final class Point4d implements HyperPoint {
                 31*Double.hashCode(y) ^
                 31*31*Double.hashCode(z) ^
                 31*31*31*Double.hashCode(a) ^
+                31*31*31*31*Double.hashCode(b) ^
                 31*31*31*Double.hashCode(p) ^
                 31*31*Double.hashCode(o);
     }
 
-    public final static class Builder implements RectBuilder<Point4d> {
+    public final static class Builder implements RectBuilder<Point5d> {
 
         @Override
-        public HyperRect getBBox(final Point4d point) {
-            return new Rect4d(point);
+        public HyperRect getBBox(final Point5d point) {
+            return new Rect5d(point);
         }
 
         @Override
         public HyperRect getMbr(final HyperPoint p1, final HyperPoint p2) {
-            return new Rect4d((Point4d)p1, (Point4d)p2);
+            return new Rect5d((Point5d)p1, (Point5d)p2);
         }
     }
 }

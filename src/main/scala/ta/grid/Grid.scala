@@ -8,7 +8,7 @@ import scala.collection.immutable.Set
 import ta.stream.RawObject
 import ta.Constants._
 import ta.{RawEdge, RawNode}
-import ta.geometry.{Point2d, Point4d, Rect2d}
+import ta.geometry.{Point2d, Point5d, Rect2d}
 import TheTree._
 import ta.algorithm.TheAlgorithm.SkyPrX
 import com.rits.cloning.Cloner
@@ -27,7 +27,7 @@ class Grid extends Cloneable {
   private var rawObjects: Set[RawObject] = Set()
 
   def createDataNaive = {
-    val filename = "n"+N_OBJECTS+"np"+N_POINTS+"g"+N_GRID_CELL+"d"+PERCENT_DISTANCE+"p"+P_THRESHOLD+"data"+KIND_OF_DATA
+    val filename = "n"+N_OBJECTS+"np"+N_POINTS+"g"+N_GRID_CELL+"d"+PERCENT_DISTANCE+"p"+P_THRESHOLD+"data"+KIND_OF_DATA+"dim"+DIMENSION
     val fwclear = new FileWriter("import/grid-obj-"+filename+".txt")
     fwclear.close()
     rawObjects.foreach { ro =>
@@ -99,7 +99,7 @@ class Grid extends Cloneable {
   // node
   def addRawNodes(nodes: Set[RawNode]): Unit = {
     nodes.map(raw => {
-      val emptyTree = createTree4D()
+      val emptyTree = createTree5D()
       Node(raw.id, raw.x, raw.y, emptyTree, Set())
     }).foreach(addNode)
   }

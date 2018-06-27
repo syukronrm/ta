@@ -2,7 +2,7 @@ package ta.grid
 
 import collection.spatial.{HyperPoint, HyperRect, RTree}
 import ta.Constants._
-import ta.geometry.{Point2d, Point3d, Point4d}
+import ta.geometry.{Point2d, Point3d, Point4d, Point5d}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
@@ -37,5 +37,9 @@ object TheTree {
 
   def createTree4D(): RTree[Point4d] = {
     new RTree(new Point4d.Builder(), 2, 8, RTree.Split.AXIAL)
+  }
+
+  def createTree5D(): RTree[Point5d] = {
+    new RTree(new Point5d.Builder(), 2, 8, RTree.Split.AXIAL)
   }
 }

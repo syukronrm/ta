@@ -3,7 +3,7 @@ package ta
 import java.util.Scanner
 
 import collection.spatial.RTree
-import ta.geometry.{Point2d, Point3d, Point4d}
+import ta.geometry.{Point2d, Point3d, Point5d}
 import ta.grid.{Edge, GridLocation, Node}
 import ta.Constants._
 import ta.grid.Object
@@ -187,7 +187,7 @@ object Dataset {
   }
 
   def generateUncertainData(objectId: Int) = {
-    val List(baseX, baseY, baseZ, baseA) = independenceUncertainData()
+    val List(baseX, baseY, baseZ, baseA, baseB) = independenceUncertainData()
 
     val prob: Double = 1.0/N_POINTS
 
@@ -206,18 +206,24 @@ object Dataset {
     if (startZ < MIN_DATASPACE) startZ = MIN_DATASPACE
     if (endZ > MAX_DATASPACE) endZ = MAX_DATASPACE
 
-    var startA: Int = baseZ - RANGE
-    var endA: Int = baseZ + RANGE
+    var startA: Int = baseA - RANGE
+    var endA: Int = baseA + RANGE
     if (startA < MIN_DATASPACE) startA = MIN_DATASPACE
     if (endA > MAX_DATASPACE) endA = MAX_DATASPACE
+
+    var startB: Int = baseB - RANGE
+    var endB: Int = baseB + RANGE
+    if (startB < MIN_DATASPACE) startB = MIN_DATASPACE
+    if (endB > MAX_DATASPACE) endB = MAX_DATASPACE
 
     (1 to N_POINTS).par.map(_ => {
       val x = startX + Random.nextInt(endX - startX + 1)
       val y = startY + Random.nextInt(endY - startY + 1)
       val z = startZ + Random.nextInt(endZ - startZ + 1)
       val a = startA + Random.nextInt(endA - startA + 1)
+      val b = startB + Random.nextInt(endB - startB + 1)
 
-      new Point4d(x, y, z, a, prob, objectId)
+      new Point5d(x, y, z, a, b, prob, objectId)
     }).toList
   }
 
@@ -240,8 +246,9 @@ object Dataset {
     val baseY = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
     val baseZ = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
     val baseA = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
+    val baseB = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
 
-    List(baseX, baseY, baseZ, baseA)
+    List(baseX, baseY, baseZ, baseA, baseB)
   }
 }
 

@@ -6,7 +6,7 @@ object Constants {
   @inline var N_GRID_CELL = 128
   @inline var GRID_WIDTH: Double = 5
   @inline var GRID_HEIGHT: Double = 5
-  @inline final val DIMENSION = 3
+  @inline final val DIMENSION = 4
 
   @inline var N_OBJECTS = 1000
   @inline var N_POINTS = 100

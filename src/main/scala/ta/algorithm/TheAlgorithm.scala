@@ -368,7 +368,7 @@ object TheAlgorithm {
   }
 
   def isyNotDominatex(y: Point3d, x: Point3d): Boolean = {
-    if (y.x <= x.x & y.y <= x.y) {
+    if (y.x <= x.x & y.y <= x.y & y.z <= x.z) {
       false
     } else {
       true

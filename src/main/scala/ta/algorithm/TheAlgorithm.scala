@@ -22,7 +22,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 case class NodeQueue(nodeId: Int, distance: Double)
 
 object TheAlgorithm {
+  var jumlahPDROverlapped: Set[Int] = Set()
+  var skyComputeSum: Int = 0
+
   def TheAlgorithm(grid: Grid, stream: Stream): Grid = {
+    jumlahPDROverlapped = Set()
+    skyComputeSum = 0
     //println("====================================WOW===============================")
     var Q: scala.collection.mutable.Queue[NodeQueue] = scala.collection.mutable.Queue[NodeQueue]()
     val tempGraph = new TempGraph
@@ -136,28 +141,23 @@ object TheAlgorithm {
             visitedNodes += nodeId
           }
         }
-//        neighborNodesEdges.keys.foreach(n => {
-//          //println("      node " + n.id)
-//          if (!visitedNodes.contains(n.id)) {
-//            val gridLocation = grid.getGridLocation(n)
-//            if (!addedGrid.contains(gridLocation)) {
-//              //println("add Edges " + gridLocation.toString)
-//              val EdgesNodes(edgesN, nodesN) = grid.getDataGrid(gridLocation)
-//              tempGraph.addEdges(nodesN, edgesN)
-//              addedGrid += gridLocation
-//              //println("        add grid (" + gridLocation.x + ", " + gridLocation.y +")")
-//            }
-//
-//            //val distanceUnvisitedNode = tempGraph.calculateDistance(rawObject, n.id)
-//            val distanceUnvisitedNode = distance + neighborNodesEdges(n)
-//            //println("        distance node " + n.id + ": " + distanceUnvisitedNode)
-//            Q.enqueue(NodeQueue(n.id, distanceUnvisitedNode))
-//
-//            visitedNodes += n.id
-//            //println("        visit node " + n.id)
-//          }
-//        })
       }
+    }
+
+//    if (rawObject.id > 5000 & rawObject.id < 5100) {
+    if (false) {
+      println(grid.nodes.size)
+      val isImpossibles = grid.nodes.map(n => n.objects.filter(_.isImpossible == true).size)
+      println(isImpossibles.size)
+
+      stream match {
+        case _: RawObject =>
+          println("Insertion " + stream.getId + " " + isImpossibles.toString())
+        case _: ExpiredObject =>
+          println("Deletion " + stream.getId + " " + isImpossibles.toString())
+      }
+
+      println("  rata-rata " + isImpossibles.sum.toDouble / isImpossibles.size)
     }
 
 //    computeTurningPoint(tempGraph.graph)
@@ -170,6 +170,8 @@ object TheAlgorithm {
       grid.removeRawObject(stream.getId)
     }
 
+    val rata2PDROverlap = jumlahPDROverlapped.sum.toDouble / jumlahPDROverlapped.size
+//    println("PDR overlap " + rata2PDROverlap + "\t" + jumlahPDROverlapped.toString())
 
     grid
 //    updateGrid(grid, tempGraph.graph)
@@ -263,8 +265,9 @@ object TheAlgorithm {
                    distance: Double,
                    rect: Rect5d): Node = {
 
-    val overlappedObjects = findPDROverlappedObjects(node, rect)
+    var overlappedObjects = findPDROverlappedObjects(node, rect)
     //println("    overlapped objects:")
+    jumlahPDROverlapped += overlappedObjects.size
 
     rawObject.points.foreach(p => node.tree.add(p))
 
@@ -275,6 +278,7 @@ object TheAlgorithm {
       if (ddrRect.contains(qRect) & distance < q.distance) {
         //println("      mark " + q.id + " as impossible")
         // Object is impossible
+//        println("1: isImpossible " + q.id)
         Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.rect, q.distance, q.position)
       } else {
 //        rawObject.points.foreach(p => node.tree.add(p))
@@ -284,12 +288,14 @@ object TheAlgorithm {
         if (objProb > (1 - P_THRESHOLD) & distance < q.distance) {
           //println("        mark " + q.id + " as impossible")
           // Object is impossible
+//          println("2: isImpossible " + q.id)
           Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.rect, q.distance, q.position)
         } else {
 //          rawObject.points.foreach(p => node.tree.add(p))
           val skyProb = if (ENV == "GENERATE") {
             0.0
           } else {
+            skyComputeSum += 1
             SkyPrX(node.tree, q.id)
           }
 //          rawObject.points.foreach(p => node.tree.remove(p))
@@ -311,7 +317,16 @@ object TheAlgorithm {
     val skyProbU = if (ENV == "GENERATE") {
       0.0
     } else {
-      SkyPrX(node.tree, rawObject.id)
+      val PDDoverlappedObjects = findPDDOverlappedObjects(node, rect, rawObject.id)
+      val pddTree = new RTree(new Point5d.Builder, 2, 8, RTree.Split.AXIAL)
+      PDDoverlappedObjects.foreach { o =>
+        val points = grid.getRawObject(o.id).get.points
+        points.foreach { p =>
+          pddTree.add(p)
+        }
+      }
+      skyComputeSum += 1
+      SkyPrX(pddTree, rawObject.id)
     }
 
     //println("    SkyProb incoming object " + rawObject.id + " = " + skyProbU)
@@ -353,7 +368,7 @@ object TheAlgorithm {
   }
 
   def isyNotDominatex(y: Point5d, x: Point5d): Boolean = {
-    if (y.x <= x.x & y.y <= y.x) {
+    if (y.x <= x.x & y.y <= x.y & y.z <= x.z & y.a <= x.a & y.b <= x.b) {
       false
     } else {
       true
@@ -387,11 +402,33 @@ object TheAlgorithm {
     val objectIds = overlappedPoints.toList.filter(_.isInstanceOf[Point5d]).map(_.o).toSet
     //println("    rect " + rect.toString)
     //println("    PDRBox " + PDRBox.toString + " objects IDs = " + objectIds.toString)
+//    println("PDR objects " + objectIds.toString())
     val objects = objectIds.map(id => {
       val a = node.objects.find(_.id == id)
 //      if (a.isEmpty) {
-        //println(id)
+//        println(id)
 //      }
+      a.get
+    })
+
+    objects.toSet
+  }
+
+  def findPDDOverlappedObjects(node: Node, rect: Rect5d, currentId: Int): Set[Object] = {
+    val tree = node.tree
+    val pddBox: Rect5d = rect.getPDD.asInstanceOf[Rect5d]
+    val overlappedPoints: Array[Point5d] = new Array[Point5d](N_POINTS)
+    tree.search(pddBox, overlappedPoints)
+
+    val objectIds = overlappedPoints.toList.filter(_.isInstanceOf[Point5d]).map(_.o).toSet - currentId
+    //println("    rect " + rect.toString)
+    //println("    PDRBox " + PDRBox.toString + " objects IDs = " + objectIds.toString)
+//    println("PDD objects " + objectIds.toString())
+    val objects = objectIds.map(id => {
+      val a = node.objects.find(_.id == id)
+//            if (a.isEmpty) {
+//      println(id)
+//            }
       a.get
     })
 

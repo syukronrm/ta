@@ -246,7 +246,7 @@ class BenchmarkStream {
     _grid.addRawNodes(table_nodes)
     _grid.addRawEdges(table_edges)
 
-    ENV = "GENERATE"
+    ENV = "TESTING"
     (0 until N_OBJECTS).foreach { i =>
       if (i % 100 == 0)
         println("runInitial " + i)
@@ -284,7 +284,7 @@ class BenchmarkStream {
 //  @Param(Array("150", "200"))
   var nPoints: Int = 50
 
-  @Param(Array("1", "2", "3"))
+  @Param(Array("2", "1", "3"))
   var kindOfData: Int = 3
 
   @Setup

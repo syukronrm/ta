@@ -2,7 +2,7 @@ package ta
 
 object Constants {
   @inline var D_EPSILON: Double = 10
-  @inline final val P_THRESHOLD = 0.5
+  @inline var P_THRESHOLD = 0.5
   @inline var N_GRID_CELL = 128
   @inline var GRID_WIDTH: Double = 5
   @inline var GRID_HEIGHT: Double = 5

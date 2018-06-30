@@ -284,8 +284,11 @@ class BenchmarkStream {
 //  @Param(Array("150", "200"))
   var nPoints: Int = 50
 
-  @Param(Array("2", "1", "3"))
+//  @Param(Array("2", "1", "3"))
   var kindOfData: Int = 3
+
+  // @Param(Array("0.1", "0.3", "0.5", "0.7", "0.9"))
+  var threshold: Double = 0.5
 
   @Setup
   def setup(): Unit = {
@@ -295,6 +298,7 @@ class BenchmarkStream {
     Constants.N_GRID_CELL = gridCell
     Constants.N_POINTS = nPoints
     Constants.KIND_OF_DATA = kindOfData
+    Constants.P_THRESHOLD = threshold
 
     grid = runInitial()
 

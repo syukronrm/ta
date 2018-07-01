@@ -42,7 +42,7 @@ class Grid extends Cloneable {
       )
       var strp = ""
       ro.points.foreach { p =>
-        strp += p.x + " " + p.y + " " + p.p + " " + p.o + " "
+        strp += p.x + " " + p.y + " " + p.z + " " + p.a + " " + p.b + " " + p.p + " " + p.o + " "
       }
       fw.write(strp + "\n")
       fw.close()

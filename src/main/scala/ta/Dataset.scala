@@ -3,7 +3,7 @@ package ta
 import java.util.Scanner
 
 import collection.spatial.RTree
-import ta.geometry.{Point2d, Point3d, Point5d}
+import ta.geometry.{Point2d, Point3d, Point6d}
 import ta.grid.{Edge, GridLocation, Node}
 import ta.Constants._
 import ta.grid.Object
@@ -187,7 +187,7 @@ object Dataset {
   }
 
   def generateUncertainData(objectId: Int) = {
-    val List(baseX, baseY, baseZ, baseA, baseB) = independenceUncertainData()
+    val List(baseX, baseY, baseZ, baseA, baseB, baseC) = independenceUncertainData()
 
     val prob: Double = 1.0/N_POINTS
 
@@ -216,14 +216,20 @@ object Dataset {
     if (startB < MIN_DATASPACE) startB = MIN_DATASPACE
     if (endB > MAX_DATASPACE) endB = MAX_DATASPACE
 
+    var startC: Int = baseC - RANGE
+    var endC: Int = baseC + RANGE
+    if (startC < MIN_DATASPACE) startC = MIN_DATASPACE
+    if (endC > MAX_DATASPACE) endC = MAX_DATASPACE
+
     (1 to N_POINTS).par.map(_ => {
       val x = startX + Random.nextInt(endX - startX + 1)
       val y = startY + Random.nextInt(endY - startY + 1)
       val z = startZ + Random.nextInt(endZ - startZ + 1)
       val a = startA + Random.nextInt(endA - startA + 1)
       val b = startB + Random.nextInt(endB - startB + 1)
+      val c = startC + Random.nextInt(endC - startC + 1)
 
-      new Point5d(x, y, z, a, b, prob, objectId)
+      new Point6d(x, y, z, a, b, c, prob, objectId)
     }).toList
   }
 
@@ -247,8 +253,9 @@ object Dataset {
     val baseZ = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
     val baseA = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
     val baseB = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
-
-    List(baseX, baseY, baseZ, baseA, baseB)
+    val baseC = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
+    
+    List(baseX, baseY, baseZ, baseA, baseB, baseC)
   }
 }
 

@@ -9,8 +9,8 @@ case class Object2(id: Int, edgeId: Int, var skyProb: Double, isImpossible: Bool
   }
 }
 
-case class Object(id: Int, edgeId: Int, var skyProb: Double, isImpossible: Boolean, nodeId: Int, rect: Rect5d, distance: Double, position: Double) {
-  def points(grid: Grid) : List[Point5d] = {
+case class Object(id: Int, edgeId: Int, var skyProb: Double, isImpossible: Boolean, nodeId: Int, rect: Rect6d, distance: Double, position: Double) {
+  def points(grid: Grid) : List[Point6d] = {
     grid.getRawObject(this.id).get.points
   }
 }

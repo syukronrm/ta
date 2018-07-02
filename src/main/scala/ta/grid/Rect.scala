@@ -8,8 +8,8 @@ import ta.geometry._
 import scala.collection.JavaConverters._
 
 object Rect {
-  def createRect(points: List[Point5d]) = {
+  def createRect(points: List[Point6d]) = {
     val objectList = points.toList.asJava
-    new Rect5d(objectList)
+    new Rect6d(objectList)
   }
 }

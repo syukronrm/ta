@@ -11,10 +11,9 @@ import ta.geometry._
 import ta.landmark._
 import ta.algorithm.TheAlgorithm._
 import ta.grid.Grid
+import visualize.ObjectConverter
 
 import scala.collection.JavaConverters._
-
-case class TP(dStart: Double, dEnd: Double, SP: Set[Object])
 
 object TurningPoint {
   def processLandmark(grid: Grid, nodeS: Node, edge: Edge, nodeE: Node): Unit = {
@@ -303,5 +302,7 @@ object TurningPoint {
     }
 
     turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
+    println(turningPointList)
+    ObjectConverter.sendTP(turningPointList.toList, edge)
   }
 }

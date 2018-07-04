@@ -22,14 +22,6 @@ object TurningPoint {
     val spNodeE = nodeE.objects.filter(o => !o.isImpossible & o.skyProb >= P_THRESHOLD)
     val Se = edge.objects
 
-
-
-//    spNodeE = spNodeE.filter(obj => {
-//      spNodeS.exists(o => {
-//        o.id == obj.id & obj.distance - o.distance == edge.length
-//      })
-//    })
-
     val findSimilar = (objects: Set[Object], obj: Object) =>
       objects.find(o => o.id == obj.id & o != obj)
 
@@ -39,7 +31,6 @@ object TurningPoint {
       o.id -> grid.getRawObject(o.id).get.points
     }.toMap
 
-    //println("GSP " + SP.map(_.id).toString())
     val Q = mutable.Queue[Landmark]()
 
     def findDominatedObjects(obj: Object, objects: Set[Object]): Set[Object] = {
@@ -175,13 +166,6 @@ object TurningPoint {
       }
     }
 
-//    if (Q.nonEmpty) {
-//      println("    Total Landmarks: ")
-//      Q.foreach(l => {
-//          println("        " + l)
-//      })
-//    }
-
     processLandmark(Q.toList, spNodeS, spNodeE, edge)
   }
 
@@ -192,14 +176,11 @@ object TurningPoint {
       val objInSpNodeEMaybe = spNodeE.find(_.id == obj.id)
       if (objInSpNodeEMaybe.isDefined) {
         if (objInSpNodeEMaybe.get.distance < obj.distance) {
-          // dari arah node E
           obj.distance + edge.length
         } else {
-          // dari arah node S
           obj.distance * -1
         }
       } else {
-        // cuma ada di node S
         obj.distance * -1
       }
     }
@@ -212,14 +193,11 @@ object TurningPoint {
       val objInSpNodeSMaybe = spNodeS.find(_.id == obj.id)
       if (objInSpNodeSMaybe.isDefined) {
         if (objInSpNodeSMaybe.get.distance < obj.distance) {
-          // dari arah node S
           obj.distance * -1
         } else {
-          // dari arah node E
           obj.distance + edge.length
         }
       } else {
-        // cuma di node E
         obj.distance + edge.length
       }
     }
@@ -227,17 +205,12 @@ object TurningPoint {
 
   def findDistance(obj: Object, edge: Edge, spNodeS: Set[Object], spNodeE: Set[Object]): Double = {
     if (obj.edgeId == edge.id) {
-      //println("    DEBUG distance obj " + obj.id + " : in edge " + edge.id + " len edge " + edge.length + " position " + obj.position)
       edge.length * obj.position
     } else {
       if (spNodeS.contains(obj)) {
         findDistanceFromNodeS(obj, edge, spNodeE)
-//        //println("    DEBUG distance obj " + obj.id + " from node s " + obj.distance)
-//        obj.distance * -1
       } else {
         findDistanceFromNodeE(obj, edge, spNodeS)
-        //println("    DEBUG distance obj " + obj.id + " from node e " + obj.distance)
-//        obj.distance + edge.length
       }
     }
   }
@@ -330,10 +303,5 @@ object TurningPoint {
     }
 
     turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
-
-//    println("      Total Turning Points " + edge.id + " len " + edge.length + ":")
-//    turningPointList.foreach(t => {
-//      println("        Start: " + t.dStart + "\t End: " + t.dEnd + "\t SP: " + t.SP.map(_.id).toString())
-//    })
   }
 }

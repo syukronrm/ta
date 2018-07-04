@@ -93,17 +93,6 @@ object TestImport {
 object TAQ {
   val mb: Int = 1024 * 1024
 
-  def printMemoryUsage(str: String) = {
-    val runtime = Runtime.getRuntime
-    val used = (runtime.totalMemory - runtime.freeMemory) / mb
-    val free = runtime.freeMemory / mb
-    val total = runtime.totalMemory / mb
-    val max = runtime.maxMemory / mb
-
-    //    println("==== " + str + " ====")
-    println(used + "\t" + free + "\t" + total + "\t" + max)
-  }
-
   def main(args: Array[String]): Unit = {
     //    val cal_table_nodes = Dataset.readNode()
     //    val cal_table_edges = Dataset.readEdge()
@@ -140,19 +129,15 @@ object TAQ {
       RawObject(3, 2, 0.6, List(new Point2d(5, 6, .4, 3), new Point2d(5, 6, .2, 3), new Point2d(6, 6, .4, 3))),
       RawObject(4, 3, 0.5, List(new Point2d(1, 3, .2, 4), new Point2d(3, 2, .3, 4), new Point2d(1, 4, .5, 4)))
     )
-    println("Used\tFree\tTotal\tMax")
-    printMemoryUsage("read node and edge")
 
     var grid = new Grid
 
 //    grid.addRawNodes(table_nodes)
 //    grid.addRawEdges(table_edges)
 
-    printMemoryUsage("inserted to grid")
 
     //    val streamsN = Dataset.generateObjects()
 
-    printMemoryUsage("generate objects")
 
     val t0 = System.nanoTime()
 
@@ -189,8 +174,6 @@ object TAQ {
     grid.createDataNaive
 
     val tEnd = System.nanoTime()
-
-    printMemoryUsage("algorithm")
 
     val t1 = System.nanoTime()
 

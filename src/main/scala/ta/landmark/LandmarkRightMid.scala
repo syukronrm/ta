@@ -5,9 +5,4 @@ class LandmarkRightMid(_distance: Double, _edgeId: Option[Int], _objId: Int, _ob
   override val edgeId: Option[Int] = _edgeId
   override val objId: Int = _objId
   val objDominatedId: Int = _objDominatedId
-
-  override def toString: String = {
-    val edge = if (edgeId.isDefined) edgeId.get.toString else "None"
-    "LandmarkRightMid in edgeId " + edge + " between objId " + objId + " and objId' " + objDominatedId + " in location " + distance
-  }
 }

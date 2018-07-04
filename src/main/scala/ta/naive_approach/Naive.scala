@@ -9,10 +9,7 @@ import collection.spatial.RTree
 import com.rits.cloning.Cloner
 import scalax.collection.immutable.Graph
 import scalax.collection.edge.WLkUnDiEdge
-import scalax.collection.GraphPredef._, scalax.collection.GraphEdge._
-import scalax.collection.edge.Implicits._
 import ta.{RawEdge, RawNode}
-import ta.algorithm.TurningPoint.processLandmark
 import ta.landmark._
 
 import scala.collection.JavaConverters._
@@ -21,7 +18,6 @@ import ta.stream._
 
 case class Edge(id: Int, i: Int, j: Int, length: Double)
 case class Node(id: Int, x: Double, y: Double)
-//case class RawObject(id: Int, edgeId: Int, position: Double, points: List[Point2d])
 
 case class Object(id: Int, distance: Double, skyProb: Double, edgeId: Int, position: Double)
 
@@ -30,7 +26,7 @@ case class TP(dStart: Double, dEnd: Double, SP: Set[Object])
 class TempGraph {
   var graph: Graph[Int, WLkUnDiEdge] = Graph()
 
-  def addNode(i: Int) = {
+  def addNode(i: Int): Unit = {
     graph = graph + i
   }
 
@@ -190,11 +186,11 @@ class Naive {
     }
   }
 
-  def getNode(id: Int) = {
+  def getNode(id: Int): Option[Node] = {
     nodes.find(_.id == id)
   }
 
-  def addRawEdges(rawEdges: Set[RawEdge]) = {
+  def addRawEdges(rawEdges: Set[RawEdge]): Unit = {
     val es = rawEdges.map(rawEdge => {
       val nodei = getNode(rawEdge.i).get
 

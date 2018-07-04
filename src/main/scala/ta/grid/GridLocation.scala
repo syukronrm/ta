@@ -1,5 +1,3 @@
 package ta.grid
 
-case class GridLocation(x: Int, y: Int) {
-
-}
+case class GridLocation(x: Int, y: Int)

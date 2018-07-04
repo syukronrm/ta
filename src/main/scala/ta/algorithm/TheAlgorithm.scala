@@ -1,53 +1,35 @@
 package ta.algorithm
 
-import collection.spatial.{HyperPoint, HyperRect, RTree}
+import collection.spatial.RTree
 import scalax.collection.Graph
 import scalax.collection.edge.WLkUnDiEdge
 import ta.graph.TempGraph
 import ta.grid._
 import ta.stream.{ExpiredObject, RawObject, Stream}
 import ta.Constants._
-import ta.geometry.{Point2d, Rect2d, Rect3d}
-import ta.grid.Rect._
+import ta.geometry.{Point2d, Rect2d}
 import ta.algorithm.TurningPoint._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Set
 import scala.collection.mutable
-import scala.concurrent.Future
-import scala.concurrent.{Future, Await}
-import scala.concurrent.duration.Duration
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 case class NodeQueue(nodeId: Int, distance: Double)
 
 object TheAlgorithm {
-  var jumlahPDROverlapped: Set[Int] = Set()
-  var skyComputeSum: Int = 0
-
   def TheAlgorithm(grid: Grid, stream: Stream): Grid = {
-    jumlahPDROverlapped = Set()
-    skyComputeSum = 0
-    //println("====================================WOW===============================")
     var Q: scala.collection.mutable.Queue[NodeQueue] = scala.collection.mutable.Queue[NodeQueue]()
     val tempGraph = new TempGraph
 
-    //println(GRID_WIDTH)
-    //println(GRID_HEIGHT)
-
-    //var updatedNodes: Set[Int] = Set()
     var visitedNodes: Set[Int] = Set()
     var updatedNodes: Set[Int] = Set()
 
     val rawObject = stream match {
       case _rawObject: RawObject =>
-       // println("Insertion Object ID " + _rawObject.id)
         grid.addObjectToEdge(_rawObject)
         grid.addRawObject(_rawObject)
         _rawObject
       case ExpiredObject(id) =>
-       // println("Deletion Object ID " + id)
         val _rawObject = grid.getRawObject(id).get
         _rawObject
     }
@@ -61,36 +43,22 @@ object TheAlgorithm {
     val nodei = grid.getNode(edge.i).get
     val nodej = grid.getNode(edge.j).get
 
-
     val gridNodeI = grid.getGridLocation(nodei)
     val gridNodeJ = grid.getGridLocation(nodej)
 
-    addedGrid += gridNodeI
-    //println("  importing data grid node " + nodei.id)
     val EdgesNodes(edgesNodeI, nodesNodeI) = grid.getDataGrid(gridNodeI)
-    //println("add Edges " + gridNodeI.toString)
     tempGraph.addEdges(nodesNodeI, edgesNodeI)
     addedGrid += gridNodeI
-    //println("    nodes " + nodesNodeI.size)
-    //println("    edges " + edgesNodeI.size)
 
-    //println("  importing data grid node " + nodej.id)
     if (!addedGrid.contains(gridNodeJ)) {
       val EdgesNodes(edgesNodeJ, nodesNodeJ) = grid.getDataGrid(gridNodeJ)
-      //println("add Edges " + gridNodeJ.toString)
       tempGraph.addEdges(nodesNodeJ, edgesNodeJ)
       addedGrid += gridNodeJ
     }
 
-    //println("    nodes " + nodesNodeJ.size)
-    //println("    edges " + edgesNodeJ.size)
-
-    //println("  add grid (" + gridNodeI.x + ", " + gridNodeI.y +")")
-    //println("  add grid (" + gridNodeJ.x + ", " + gridNodeJ.y +")")
-
     val e = tempGraph.getEdge(rawObject.edgeId)
-    var distanceNodeI = e.length * rawObject.position
-    var distanceNodeJ = e.length * (1 - rawObject.position)
+    val distanceNodeI = e.length * rawObject.position
+    val distanceNodeJ = e.length * (1 - rawObject.position)
 
     Q.enqueue(NodeQueue(nodei.id, distanceNodeI))
     visitedNodes = visitedNodes + nodei.id
@@ -100,30 +68,22 @@ object TheAlgorithm {
     while (Q.nonEmpty) {
       Q = Q.sortBy(_.distance)
       val NodeQueue(currentNodeId, distance) = Q.dequeue()
-      //println("  dequeue node " + currentNodeId + " with distance " + distance)
 
       if (distance < D_EPSILON) {
         val currentNode = grid.getNode(currentNodeId).get
-//        val currentNode = tempGraph.getNode(currentNodeId).get
 
         val gridLocation = grid.getGridLocation(currentNode)
 
         if (!addedGrid.contains(gridLocation)) {
-          //println("add Edges " + gridLocation.toString)
           val EdgesNodes(edgesN, nodesN) = grid.getDataGrid(gridLocation)
           tempGraph.addEdges(nodesN, edgesN)
           addedGrid += gridLocation
-          //println("        add grid (" + gridLocation.x + ", " + gridLocation.y +")")
         }
 
         val updatedNode = stream match {
           case _: RawObject =>
-            //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
-            //println("    distance node " + currentNodeId + ": " + distance)
-            //println("    insert object " + rawObject.id + " to node " + currentNodeId)
             insertToNode(grid, currentNode, rawObject, distance, rect)
           case ExpiredObject(objectId) =>
-            //println("    delete object " + rawObject + " from node " + currentNodeId)
             deleteFromNode(grid, currentNode, objectId, rect)
         }
 
@@ -131,9 +91,7 @@ object TheAlgorithm {
         grid.updateNode(updatedNode)
         updatedNodes += updatedNode.id
 
-        //println("    node neighbor ")
         val neighborNodesEdges = tempGraph.getNeighborNodesEdges(currentNodeId)
-        //println("neighbors " + neighborNodesEdges.toString())
 
         neighborNodesEdges.keys.foreach { nodeId =>
           if (!visitedNodes.contains(nodeId)) {
@@ -145,37 +103,14 @@ object TheAlgorithm {
       }
     }
 
-//    if (rawObject.id > 5000 & rawObject.id < 5100) {
-    if (false) {
-      println(grid.nodes.size)
-      val isImpossibles = grid.nodes.map(n => n.objects.filter(_.isImpossible == true).size)
-      println(isImpossibles.size)
-
-      stream match {
-        case _: RawObject =>
-          println("Insertion " + stream.getId + " " + isImpossibles.toString())
-        case _: ExpiredObject =>
-          println("Deletion " + stream.getId + " " + isImpossibles.toString())
-      }
-
-      println("  rata-rata " + isImpossibles.sum.toDouble / isImpossibles.size)
-    }
-
-//    computeTurningPoint(tempGraph.graph)
-    if (ENV == "TESTING") {
-      computeTurningPoint(grid, tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes)
-    }
+    computeTurningPoint(grid, tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes)
 
     if (stream.isInstanceOf[ExpiredObject]) {
       grid.removeObjectFromEdge(stream.getId)
       grid.removeRawObject(stream.getId)
     }
 
-    val rata2PDROverlap = jumlahPDROverlapped.sum.toDouble / jumlahPDROverlapped.size
-//    println("PDR overlap " + rata2PDROverlap + "\t" + jumlahPDROverlapped.toString())
-
     grid
-//    updateGrid(grid, tempGraph.graph)
   }
 
   def updateGrid(grid: Grid, graph: Graph[Node, WLkUnDiEdge]): Grid = {
@@ -212,10 +147,9 @@ object TheAlgorithm {
 
     overlappedObjects = overlappedObjects.map {
       case q@Object(_, _, _, true, _, _, _, _) => q
-      case q@Object(a, b, _, d, e, f, g, h) =>
+      case q@Object(_, _, _, _, _, _, _, _) =>
         val skyProb = SkyPrX(currentNode.tree, q.id)
-        //println("      SkyProb object " + q.id + " = " + skyProb)
-        Object(a, b, skyProb, d, e, f, g, h)
+        q.updateSkyProb(skyProb)
     }
 
     var newObjects = currentNode.objects.map { o =>
@@ -238,8 +172,6 @@ object TheAlgorithm {
                    rect: Rect2d): Node = {
 
     var overlappedObjects = findPDROverlappedObjects(node, rect)
-    //println("    overlapped objects:")
-    jumlahPDROverlapped += overlappedObjects.size
 
     rawObject.points.foreach(p => node.tree.add(p))
 
@@ -248,31 +180,14 @@ object TheAlgorithm {
       val qRect = q.rect
 
       if (ddrRect.contains(qRect) & distance < q.distance) {
-        //println("      mark " + q.id + " as impossible")
-        // Object is impossible
-//        println("1: isImpossible " + q.id)
-        Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.rect, q.distance, q.position)
+        q.asImpossible()
       } else {
-//        rawObject.points.foreach(p => node.tree.add(p))
         val objProb = getDominationProbability(node.tree, ddrRect, q.id)
-//        rawObject.points.foreach(p => node.tree.remove(p))
-        //println("      probability object " + q.id + " dominate object "+ rawObject.id +" is " + objProb)
         if (objProb > (1 - P_THRESHOLD) & distance < q.distance) {
-          //println("        mark " + q.id + " as impossible")
-          // Object is impossible
-//          println("2: isImpossible " + q.id)
-          Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.rect, q.distance, q.position)
+          q.asImpossible()
         } else {
-//          rawObject.points.foreach(p => node.tree.add(p))
-          val skyProb = if (ENV == "GENERATE") {
-            0.0
-          } else {
-            skyComputeSum += 1
-            SkyPrX(node.tree, q.id)
-          }
-//          rawObject.points.foreach(p => node.tree.remove(p))
-          //println("      SkyProb object " + q.id + " = " + skyProb)
-          Object(q.id, q.edgeId, skyProb, q.isImpossible, node.id, q.rect, q.distance, q.position)
+          val skyProb = SkyPrX(node.tree, q.id)
+          q.updateSkyProb(skyProb)
         }
       }
     })
@@ -286,22 +201,16 @@ object TheAlgorithm {
         o
     })
 
-    val skyProbU = if (ENV == "GENERATE") {
-      0.0
-    } else {
-      val PDDoverlappedObjects = findPDDOverlappedObjects(node, rect, rawObject.id)
-      val pddTree = new RTree(new Point2d.Builder, 2, 8, RTree.Split.AXIAL)
-      PDDoverlappedObjects.foreach { o =>
-        val points = grid.getRawObject(o.id).get.points
-        points.foreach { p =>
-          pddTree.add(p)
-        }
+    val PDDoverlappedObjects = findPDDOverlappedObjects(node, rect, rawObject.id)
+    val pddTree = new RTree(new Point2d.Builder, 2, 8, RTree.Split.AXIAL)
+    PDDoverlappedObjects.foreach { o =>
+      val points = grid.getRawObject(o.id).get.points
+      points.foreach { p =>
+        pddTree.add(p)
       }
-      skyComputeSum += 1
-      SkyPrX(pddTree, rawObject.id)
     }
+    val skyProbU = SkyPrX(pddTree, rawObject.id)
 
-    //println("    SkyProb incoming object " + rawObject.id + " = " + skyProbU)
     val finalObjects = updatedObjects +
         Object(rawObject.id, rawObject.edgeId, skyProbU, isImpossible = false, node.id, rect, distance, rawObject.position)
     Node(node.id, node.x, node.y, node.tree, finalObjects)
@@ -309,15 +218,11 @@ object TheAlgorithm {
 
   def SkyPrX(tree: RTree[Point2d], objectId: Int): Double = {
     val X = scala.collection.mutable.Set[Point2d]()
-    tree.forEach(p => {
-      if (p.o == objectId) {
-        X.add(p)
-      }
-    })
+    tree.forEach { p =>
+      if (p.o == objectId) X.add(p)
+    }
 
-    X.map(x => {
-      x.p * SkyPrx(tree, X, x)
-    })
+    X.map(x => x.p * SkyPrx(tree, X, x))
       .sum
   }
 
@@ -328,7 +233,7 @@ object TheAlgorithm {
     entries
       .toList
       .filterNot(e => X.contains(e))
-      .groupBy(_.o) // filtered Y Map
+      .groupBy(_.o)
       .values
       .map(Y => PrYnotdominatex(Y, x))
       .product
@@ -345,13 +250,6 @@ object TheAlgorithm {
     } else {
       true
     }
-
-//    val Y = new Rect2d(y)
-//    val X = new Rect2d(x)
-//    if (Y.getDDR.contains(X))
-//      false
-//    else
-//      true
   }
 
   def getDominationProbability(tree: RTree[Point2d], ddrRect: Rect2d, objectId: Int): Double = {
@@ -372,18 +270,12 @@ object TheAlgorithm {
     tree.search(PDRBox, overlappedPoints)
 
     val objectIds = overlappedPoints.toList.filter(_.isInstanceOf[Point2d]).map(_.o).toSet
-    //println("    rect " + rect.toString)
-    //println("    PDRBox " + PDRBox.toString + " objects IDs = " + objectIds.toString)
-//    println("PDR objects " + objectIds.toString())
     val objects = objectIds.map(id => {
       val a = node.objects.find(_.id == id)
-//      if (a.isEmpty) {
-//        println(id)
-//      }
       a.get
     })
 
-    objects.toSet
+    objects
   }
 
   def findPDDOverlappedObjects(node: Node, rect: Rect2d, currentId: Int): Set[Object] = {
@@ -393,17 +285,11 @@ object TheAlgorithm {
     tree.search(pddBox, overlappedPoints)
 
     val objectIds = overlappedPoints.toList.filter(_.isInstanceOf[Point2d]).map(_.o).toSet - currentId
-    //println("    rect " + rect.toString)
-    //println("    PDRBox " + PDRBox.toString + " objects IDs = " + objectIds.toString)
-//    println("PDD objects " + objectIds.toString())
     val objects = objectIds.map(id => {
       val a = node.objects.find(_.id == id)
-//            if (a.isEmpty) {
-//      println(id)
-//            }
       a.get
     })
 
-    objects.toSet
+    objects
   }
 }

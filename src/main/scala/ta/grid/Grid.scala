@@ -2,20 +2,15 @@ package ta.grid
 
 import java.io.FileWriter
 
-import collection.spatial.{HyperPoint, RTree, RectBuilder}
-
 import scala.collection.immutable.Set
 import ta.stream.RawObject
-import ta.Constants._
 import ta.{RawEdge, RawNode}
-import ta.geometry.{Point2d, Point3d, Rect2d}
-import TheTree._
+import collection.spatial.RTree
 import ta.algorithm.TheAlgorithm.SkyPrX
-import com.rits.cloning.Cloner
 import ta.grid.Rect._
 import ta.Constants._
+import ta.geometry.Point2d
 
-import scala.collection.parallel.ParSet
 import scala.math.{floor, round}
 
 case class EdgesNodes(edges: Set[Edge], nodes: Set[Node])
@@ -87,7 +82,6 @@ class Grid extends Cloneable {
 
   var tableGrid: Map[Int, Map[Int, Table]] = Map()
 
-  // raw object
   def getRawObject(objectId: Int): Option[RawObject] = rawObjects.par.find(_.id == objectId)
   def addRawObject(rawObject: RawObject): Unit =
     this.rawObjects = this.rawObjects + rawObject
@@ -96,10 +90,9 @@ class Grid extends Cloneable {
     this.rawObjects = this.rawObjects - rawObject
   }
 
-  // node
   def addRawNodes(nodes: Set[RawNode]): Unit = {
     nodes.map(raw => {
-      val emptyTree = createTree2D()
+      val emptyTree = new RTree(new Point2d.Builder(), 2, 8, RTree.Split.AXIAL)
       Node(raw.id, raw.x, raw.y, emptyTree, Set())
     }).foreach(addNode)
   }
@@ -149,7 +142,6 @@ class Grid extends Cloneable {
   def addRawEdges(edges: Set[RawEdge]): Unit = {
     val es = edges.par.map(rawEdge => {
       val nodei = getNode(rawEdge.i).get
-      val g = getGridLocation(nodei)
 
       rawEdge.lengthMaybe match {
         case Some(length) =>
@@ -170,13 +162,6 @@ class Grid extends Cloneable {
   def getEdge(edgeId: Int): Option[Edge] = this.edges.par.find(_.id == edgeId)
 
   def addEdge(edge: Edge): Unit = {
-    val nodei: Int = edge.i
-
-//    if (!isNodeExist(nodei)) {
-//      val edgeId = edge.id
-//      throw new Error("addEdge "+ edgeId +" : Node "+ nodei +" tidak tersedia")
-//    }
-
     this.edges = this.edges + edge
   }
 
@@ -208,11 +193,6 @@ class Grid extends Cloneable {
     addObjectToEdge(newObject)
   }
 
-  /** Insert object to edge.
-    * Get edge by edgeId in class Object
-    *
-    * @param obj object to be inserted
-    */
   def addObjectToEdge(obj: Object): Unit = {
     val e = this.edges.par.find(_.id == obj.edgeId).get
     val newEdge = Edge(e.id, e.i, e.j, e.length, e.objects + obj)
@@ -220,22 +200,12 @@ class Grid extends Cloneable {
     this.edges = this.edges - e + newEdge
   }
 
-
-  /** Remove object from edge by object.
-    *
-    * @param obj object should be exist
-    */
   def removeObjectFromEdge(obj: Object): Unit = {
     val e = this.edges.par.find(_.id == obj.edgeId).get
 
     this.edges = this.edges - e + Edge(e.id, e.i, e.j, e.length, e.objects - obj)
   }
 
-
-  /** Remove object from edge by object ID
-    *
-    * @param objectId object to be removed
-    */
   def removeObjectFromEdge(objectId: Int): Unit = {
     val o = this.rawObjects.par.find(_.id == objectId).get
     val e = this.edges.par.find(_.id == o.edgeId).get
@@ -244,11 +214,6 @@ class Grid extends Cloneable {
     this.edges = this.edges - e + Edge(e.id, e.i, e.j, e.length, e.objects - deletedObject)
   }
 
-  /** Find all edges connected to nodes
-    *
-    *  @param nodes list of nodes
-    *  @return Edge instance, all edges connected to nodes
-    */
   def getEdges(nodes: List[Node]): List[Edge] = {
     val nodeIds = nodes.map((n: Node) => n.id)
 
@@ -257,12 +222,6 @@ class Grid extends Cloneable {
     }).toList
   }
 
-  /** Create new GridLocation object based on x
-    * and y coordinate of node
-    *
-    * @param node node
-    * @return a GridLocation instance
-    */
   def getGridLocation(node: Node): GridLocation = {
     val gx = math.floor(node.x / GRID_WIDTH).toInt
     val gy = math.floor(node.y / GRID_HEIGHT).toInt
@@ -270,14 +229,6 @@ class Grid extends Cloneable {
     GridLocation(gx, gy)
   }
 
-  /** Create new GridLocation object based on x
-    * and y coordinate of node
-    *
-    * @param x x coordinate
-    * @param y y coordinate
-    * @return a GridLocation instance in form of gx: Int
-    *         and gy: Int
-    */
   def getGridLocation(x: Double, y: Double): GridLocation = {
     val gx = math.floor(x / GRID_WIDTH).toInt
     val gy = math.floor(y / GRID_HEIGHT).toInt
@@ -285,11 +236,6 @@ class Grid extends Cloneable {
     GridLocation(gx, gy)
   }
 
-  /** Get all nodes and edges connected to grid
-    *
-    * @param g location of grid
-    * @return Set[Edge] and Set[Node] in form of List
-    */
   def getDataGrid(g: GridLocation): EdgesNodes = {
     val _nodes = getNodes(g)
     val _nodeIds = _nodes.map(_.id)
@@ -298,14 +244,9 @@ class Grid extends Cloneable {
       .flatMap(e => Set(e.i, e.j))
       .filterNot(nid => _nodeIds.contains(nid))
       .toSet
-//    val nodes = getNodes(edges).toSet
+
     val nodes = getNodesFromId(nodeIds).toSet
 
     EdgesNodes(edges.toSet, _nodes.toSet ++ nodes)
-  }
-
-  def cloneGrid(): Grid = {
-    val cloner = new Cloner()
-    cloner.deepClone(this)
   }
 }

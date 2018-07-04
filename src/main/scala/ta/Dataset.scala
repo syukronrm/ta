@@ -33,7 +33,7 @@ object Dataset {
   }
 
   def readNode(): List[RawNode] ={
-    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
+    val lines = scala.io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
 
     var minX = 20000.0
     var minY = 20000.0
@@ -64,11 +64,11 @@ object Dataset {
 
     val a = nodes.toList
 
-    var rangeX = (maxX - minX) / N_GRID_CELL
-    var rangeY = (maxY - minY) / N_GRID_CELL
+    val rangeX = (maxX - minX) / N_GRID_CELL
+    val rangeY = (maxY - minY) / N_GRID_CELL
 
-    var gridHeight = rangeY / N_GRID_CELL
-    var gridWidth = rangeX / N_GRID_CELL
+    val gridHeight = rangeY / N_GRID_CELL
+    val gridWidth = rangeX / N_GRID_CELL
 
     Constants.GRID_HEIGHT = gridHeight
     Constants.GRID_WIDTH = gridWidth
@@ -79,7 +79,7 @@ object Dataset {
   }
 
   def readNodePartial(): List[RawNode] = {
-    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
+    val lines = scala.io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
 
     lines.foreach { l =>
       val lineArray = l.split(' ')
@@ -92,23 +92,20 @@ object Dataset {
       }
     }
 
-    //println(this.nodes)
-    val a = nodes
-
-    var rangeX = (-114 - (-120)).toDouble / N_GRID_CELL
-    var rangeY = (37 - 32).toDouble / N_GRID_CELL
+    val rangeX = (-114 - (-120)).toDouble / N_GRID_CELL
+    val rangeY = (37 - 32).toDouble / N_GRID_CELL
 
     println("rangeX " + rangeX + "rangeY " + rangeY)
 
-    var gridHeight = rangeY / N_GRID_CELL
-    var gridWidth = rangeX / N_GRID_CELL
+    val gridHeight = rangeY / N_GRID_CELL
+    val gridWidth = rangeX / N_GRID_CELL
 
     Constants.GRID_HEIGHT = gridHeight
     Constants.GRID_WIDTH = gridWidth
 
     Constants.D_EPSILON = 6 * (PERCENT_DISTANCE / 100.0)
 
-    a
+    nodes
   }
 
   def getGridLocation(x: Double, y: Double): GridLocation = {
@@ -119,7 +116,7 @@ object Dataset {
   }
 
   def readEdge(): List[RawEdge] = {
-    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines()
+    val lines = scala.io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines()
 
     lines.foreach { l =>
       val lineArray = l.split(' ')
@@ -135,7 +132,7 @@ object Dataset {
   }
 
   def readEdgePartial(): List[RawEdge] = {
-    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines().toSet
+    val lines = scala.io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines().toSet
 
     lines.par.foreach { l =>
       val lineArray = l.split(' ')
@@ -160,12 +157,11 @@ object Dataset {
     var expiredObjectId = 0
     val edgesSize = this.edges.size
 
-    val a = (1 to (N_OBJECTS + (N_STREAM * 2))).map(_ => {
+    val objects = (1 to (N_OBJECTS + (N_STREAM * 2))).map(_ => {
       val edgeIndex = Math.floor(Math.random() * (edgesSize - 1)).toInt
       val edgeMaybe = edges.lift(edgeIndex)
 
       if (edgeMaybe.isEmpty) {
-        //println(this.edges)
         println("ERROR " + edgeIndex)
       }
 
@@ -174,19 +170,17 @@ object Dataset {
 
       if (objectId - expiredObjectId >= TIME_EXPIRATION) {
         expiredObjectId += 1
-        //println("generate expire object Id " + expiredObjectId)
         ExpiredObject(expiredObjectId)
       } else {
         objectId += 1
-        //println("generate stream object Id " + objectId)
         RawObject(objectId, edgeId, position, generateUncertainData(objectId))
       }
     }).toList
 
-    a
+    objects
   }
 
-  def generateUncertainData(objectId: Int) = {
+  def generateUncertainData(objectId: Int): List[Point2d] = {
     val List(baseX, baseY) = KIND_OF_DATA match {
       case 1 =>
         anticorrelatedUncertainData()
@@ -216,21 +210,21 @@ object Dataset {
     }).toList
   }
 
-  def anticorrelatedUncertainData() = {
+  def anticorrelatedUncertainData(): List[Int] = {
     val baseX = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
     val baseY = (MAX_DATASPACE - MIN_DATASPACE) - baseX
 
     List(baseX, baseY)
   }
 
-  def correlatedUncertainData() = {
+  def correlatedUncertainData(): List[Int] = {
     val baseX = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
     val baseY = baseX
 
     List(baseX, baseY)
   }
 
-  def independenceUncertainData() = {
+  def independenceUncertainData(): List[Int] = {
     val baseX = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
     val baseY = Math.floor(Math.random() * (MAX_DATASPACE - MIN_DATASPACE) + MIN_DATASPACE).toInt
 

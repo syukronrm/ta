@@ -209,6 +209,9 @@ object TheAlgorithm {
         pddTree.add(p)
       }
     }
+
+    rawObject.points.foreach { p => pddTree.add(p) }
+
     val skyProbU = SkyPrX(pddTree, rawObject.id)
 
     val finalObjects = updatedObjects +

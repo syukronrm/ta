@@ -16,7 +16,7 @@ object Constants {
 
   @inline val RANGE = 250
 
-  @inline var PERCENT_DISTANCE = 0.5
+  @inline var PERCENT_DISTANCE: Double = 1
 
   @inline var TIME_EXPIRATION = 1000
 
@@ -30,6 +30,6 @@ object Constants {
   // 2 : correlated
   // 3 : independence
 
-  @inline var ENV: String = "GENERATE"
+  @inline var ENV: String = "TESTING"
   // "TESTING"
 }

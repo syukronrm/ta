@@ -75,10 +75,11 @@ public final class Rect2d implements HyperRect {
     @Override
     public void setPoints(List points) {
         double minX, minY, maxX, maxY;
-        minX = Double.MAX_VALUE;
-        minY = Double.MAX_VALUE;
-        maxX = Double.MIN_VALUE;
-        maxY = Double.MIN_VALUE;
+        Point2d firstObject = (Point2d) points.get(0);
+        minX = firstObject.x;
+        minY = firstObject.y;
+        maxX = firstObject.x;
+        maxY = firstObject.y;
 
         for (Object point : points) {
             Point2d p = (Point2d) point;

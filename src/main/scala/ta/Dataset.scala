@@ -33,7 +33,7 @@ object Dataset {
   }
 
   def readNode(): List[RawNode] ={
-    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
+    val lines = scala.io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
 
     var minX = 20000.0
     var minY = 20000.0
@@ -79,7 +79,7 @@ object Dataset {
   }
 
   def readNodePartial(): List[RawNode] = {
-    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
+    val lines = scala.io.Source.fromFile("src/main/scala/dataset/california/cal.cnode.txt").getLines()
 
     lines.foreach { l =>
       val lineArray = l.split(' ')
@@ -119,7 +119,7 @@ object Dataset {
   }
 
   def readEdge(): List[RawEdge] = {
-    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines()
+    val lines = scala.io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines()
 
     lines.foreach { l =>
       val lineArray = l.split(' ')
@@ -135,7 +135,7 @@ object Dataset {
   }
 
   def readEdgePartial(): List[RawEdge] = {
-    val lines = io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines().toSet
+    val lines = scala.io.Source.fromFile("src/main/scala/dataset/california/cal.cedge.txt").getLines().toSet
 
     lines.par.foreach { l =>
       val lineArray = l.split(' ')

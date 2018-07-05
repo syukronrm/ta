@@ -100,7 +100,7 @@ object TheAlgorithm {
     while (Q.nonEmpty) {
       Q = Q.sortBy(_.distance)
       val NodeQueue(currentNodeId, distance) = Q.dequeue()
-      //println("  dequeue node " + currentNodeId + " with distance " + distance)
+//      println("  dequeue node " + currentNodeId + " with distance " + distance)
 
       if (distance < D_EPSILON) {
         val currentNode = grid.getNode(currentNodeId).get
@@ -119,8 +119,8 @@ object TheAlgorithm {
         val updatedNode = stream match {
           case _: RawObject =>
             //val distance = tempGraph.calculateDistance(rawObject, currentNodeId)
-            //println("    distance node " + currentNodeId + ": " + distance)
-            //println("    insert object " + rawObject.id + " to node " + currentNodeId)
+//            println("    distance node " + currentNodeId + ": " + distance)
+//            println("    insert object " + rawObject.id + " to node " + currentNodeId)
             insertToNode(grid, currentNode, rawObject, distance, rect)
           case ExpiredObject(objectId) =>
             //println("    delete object " + rawObject + " from node " + currentNodeId)
@@ -161,6 +161,7 @@ object TheAlgorithm {
       println("  rata-rata " + isImpossibles.sum.toDouble / isImpossibles.size)
     }
 
+    println(ENV)
 //    computeTurningPoint(tempGraph.graph)
     if (ENV == "TESTING") {
       computeTurningPoint(grid, tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes)
@@ -248,7 +249,7 @@ object TheAlgorithm {
       val qRect = q.rect
 
       if (ddrRect.contains(qRect) & distance < q.distance) {
-        //println("      mark " + q.id + " as impossible")
+//        println("      mark1 " + q.id + " as impossible")
         // Object is impossible
 //        println("1: isImpossible " + q.id)
         Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.rect, q.distance, q.position)
@@ -258,7 +259,7 @@ object TheAlgorithm {
 //        rawObject.points.foreach(p => node.tree.remove(p))
         //println("      probability object " + q.id + " dominate object "+ rawObject.id +" is " + objProb)
         if (objProb > (1 - P_THRESHOLD) & distance < q.distance) {
-          //println("        mark " + q.id + " as impossible")
+//          println("        mark2 " + q.id + " as impossible")
           // Object is impossible
 //          println("2: isImpossible " + q.id)
           Object(q.id, q.edgeId, q.skyProb, isImpossible = true, node.id, q.rect, q.distance, q.position)
@@ -271,7 +272,7 @@ object TheAlgorithm {
             SkyPrX(node.tree, q.id)
           }
 //          rawObject.points.foreach(p => node.tree.remove(p))
-          //println("      SkyProb object " + q.id + " = " + skyProb)
+//          println("      SkyProb object " + q.id + " = " + skyProb)
           Object(q.id, q.edgeId, skyProb, q.isImpossible, node.id, q.rect, q.distance, q.position)
         }
       }
@@ -297,6 +298,9 @@ object TheAlgorithm {
           pddTree.add(p)
         }
       }
+
+      rawObject.points.foreach { p => pddTree.add(p) }
+
       skyComputeSum += 1
       SkyPrX(pddTree, rawObject.id)
     }

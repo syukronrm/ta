@@ -1,0 +1,49 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.gridline {
+  stroke: green;
+  stroke-width: 1;
+}
+
+.nodes {
+  fill: gray;
+}
+
+.node-label {
+  display: hidden;
+  font: bold 10px Arial;
+}
+
+.edges {
+  stroke: black;
+  stroke-width: 2;
+}
+
+.objects {
+  fill: aqua;
+  stroke: black;
+}
+
+.object-label {
+  font: bold 10px Arial;
+}
+
+.edge-label {
+  font: Bold 10px Arial;
+  fill: brown;
+}
+
+#query {
+  fill: orange
+}
+
+.hidden {
+  visibility: hidden;
+}

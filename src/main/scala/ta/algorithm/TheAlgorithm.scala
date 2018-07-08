@@ -28,9 +28,15 @@ object TheAlgorithm {
       case _rawObject: RawObject =>
         grid.addObjectToEdge(_rawObject)
         grid.addRawObject(_rawObject)
+
+        STATE = "INSERTION"
+
         _rawObject
       case ExpiredObject(id) =>
         val _rawObject = grid.getRawObject(id).get
+
+        STATE = "DELETION"
+
         _rawObject
     }
 
@@ -103,7 +109,12 @@ object TheAlgorithm {
       }
     }
 
-    computeTurningPoint(grid, tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes)
+    if (stream.isInstanceOf[RawObject])
+      tempGraph.addObjectToEdge(rawObject)
+    else
+      tempGraph.removeObjectFromEdge(rawObject)
+
+    computeTurningPoint(grid, tempGraph.edgesGraph, tempGraph.nodesGraph, updatedNodes, edge)
 
     if (stream.isInstanceOf[ExpiredObject]) {
       grid.removeObjectFromEdge(stream.getId)
@@ -119,10 +130,11 @@ object TheAlgorithm {
     grid
   }
 
-  def computeTurningPoint(grid: Grid, edges: mutable.Map[Int, Edge], nodes: mutable.Map[Int, Node], updatedNodes: Set[Int]): Unit = {
+  def computeTurningPoint(grid: Grid, edges: mutable.Map[Int, Edge], nodes: mutable.Map[Int, Node], updatedNodes: Set[Int], edge: Edge): Unit = {
     edges.values
-      .filter(e => updatedNodes.contains(e.i) | updatedNodes.contains(e.j))
+      .filter(e => updatedNodes.contains(e.i) | updatedNodes.contains(e.j) | e.id == edge.id)
       .foreach { e =>
+        print(" e" + e.id)
         val nodeS = nodes(e.i)
         val nodeE = nodes(e.j)
 

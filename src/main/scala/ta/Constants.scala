@@ -1,7 +1,7 @@
 package ta
 
 object Constants {
-  @inline var D_EPSILON: Double = 10
+  @inline var D_EPSILON: Double = 2
   @inline var P_THRESHOLD = 0.5
   @inline var N_GRID_CELL = 128
   @inline var GRID_WIDTH: Double = 5
@@ -32,4 +32,7 @@ object Constants {
 
   @inline var ENV: String = "TESTING"
   // "TESTING"
+
+  @inline var STATE: String = "INSERTION"
+  // "DELETION"
 }

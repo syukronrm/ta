@@ -11,6 +11,8 @@ import scalax.collection.immutable.Graph
 import scalax.collection.edge.WLkUnDiEdge
 import ta.{RawEdge, RawNode}
 import ta.landmark._
+import io.circe.generic.auto._
+import io.circe.syntax._
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable

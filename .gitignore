@@ -9,3 +9,5 @@ out
 *.log
 *.swp
 import/*
+views/node_modules
+

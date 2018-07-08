@@ -16,7 +16,7 @@ import visualize.ObjectConverter
 import scala.collection.JavaConverters._
 
 object TurningPoint {
-  def processLandmark(grid: Grid, nodeS: Node, edge: Edge, nodeE: Node): Unit = {
+  def processLandmark(grid: Grid, nodeS: Node, edge: Edge, nodeE: Node): Vector[TP] = {
     val spNodeS = nodeS.objects.filter(o => !o.isImpossible)
     val spNodeE = nodeE.objects.filter(o => !o.isImpossible)
     val Se = edge.objects
@@ -214,7 +214,7 @@ object TurningPoint {
     }
   }
 
-  def processLandmark(landmarks: List[Landmark], spNodeS: Set[Object], spNodeE: Set[Object], edge: Edge): Unit = {
+  def processLandmark(landmarks: List[Landmark], spNodeS: Set[Object], spNodeE: Set[Object], edge: Edge): Vector[TP] = {
     val sortedLandmarks = landmarks.sortBy(_.distance)
     val objects = spNodeS ++ spNodeE ++ edge.objects
 
@@ -244,21 +244,13 @@ object TurningPoint {
               false
           }
 
-          val landmarkRightMaybe = queue.find { landmark =>
-            landmark.isInstanceOf[LandmarkRight] & landmark.objId == l.objId
-          }
+          if (!isLandmarkRightMidExist) {
+            val obj = objects.find(_.id == l.objId).get
 
-          if (landmarkRightMaybe.isDefined) {
-            queue = queue.filterNot(_ == landmarkRightMaybe.get)
-          } else {
-            if (!isLandmarkRightMidExist) {
-              val obj = objects.find(_.id == l.objId).get
+            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
 
-              turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
-
-              dStart = l.distance
-              SP = SP + obj
-            }
+            dStart = l.distance
+            SP = SP + obj
           }
         case _: LandmarkRight =>
           if (isObjectInSP(SP, l.objId)) {
@@ -270,7 +262,6 @@ object TurningPoint {
             SP = SP - obj
           }
         case landmark: LandmarkLeftMid =>
-
           if (isObjectInSP(SP, landmark.objId)
             & isObjectInSP(SP, landmark.objDominatedId)) {
             val objDominated = SP.find(_.id == landmark.objDominatedId).get
@@ -302,7 +293,9 @@ object TurningPoint {
     }
 
     turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
-    println(turningPointList)
-    ObjectConverter.sendTP(turningPointList.toList, edge)
+//    println(turningPointList)
+//    if (STATE == "DELETION")
+      ObjectConverter.sendTP(turningPointList.toList, edge)
+    turningPointList
   }
 }

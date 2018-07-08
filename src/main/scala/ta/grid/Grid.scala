@@ -19,7 +19,7 @@ case class Table(edges: Set[Int], nodes: Set[Int])
 class Grid extends Cloneable {
   private var edges: Set[Edge] = Set()
   var nodes: Set[Node] = Set()
-  private var rawObjects: Set[RawObject] = Set()
+  var rawObjects: Set[RawObject] = Set()
 
   def createDataNaive = {
     val filename = "n"+N_OBJECTS+"np"+N_POINTS+"g"+N_GRID_CELL+"d"+PERCENT_DISTANCE+"p"+P_THRESHOLD+"data"+KIND_OF_DATA+"dim"+DIMENSION

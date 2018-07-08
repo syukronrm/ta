@@ -3,21 +3,16 @@ package ta
 import java.util
 import java.util.concurrent.TimeUnit
 
-import collection.spatial.{HyperPoint, RTree, RectBuilder}
 import org.openjdk.jmh.annotations.Setup
-import ta.grid.Node
-import ta.grid.Edge
 import ta.grid.Grid
 import ta.stream.{ExpiredObject, RawObject}
 import ta.geometry.Point2d
 import ta.algorithm.TheAlgorithm._
 import ta.Constants._
 import ta.naive_approach.Naive
-import com.rits.cloning.Cloner
-import com.sun.java_cup.internal.runtime.Scanner
+import visualize.Exporter._
 
 import scala.collection.immutable.Set
-import scala.collection.parallel.ParSet
 
 case class RawNode(id: Int, x: Double, y: Double)
 case class RawEdge(id: Int, i: Int, j: Int, lengthMaybe: Option[Double])
@@ -48,6 +43,8 @@ object TestImport {
       RawEdge(10, 7, 8, None),
       RawEdge(11, 4, 6, None)
     )
+
+
 
     val streams = List(
       RawObject(1, 1, 0.5, List(new Point2d(5, 7, .6, 1), new Point2d(4, 5, .1, 1), new Point2d(7, 6, .3, 1))),
@@ -129,6 +126,8 @@ object TAQ {
       RawObject(3, 2, 0.6, List(new Point2d(5, 6, .4, 3), new Point2d(5, 6, .2, 3), new Point2d(6, 6, .4, 3))),
       RawObject(4, 3, 0.5, List(new Point2d(1, 3, .2, 4), new Point2d(3, 2, .3, 4), new Point2d(1, 4, .5, 4)))
     )
+
+
 
     var grid = new Grid
 

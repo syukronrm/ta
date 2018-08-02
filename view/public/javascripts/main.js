@@ -88,7 +88,7 @@ let svgWidth = 1100;
 let svgHeight = 1100;
 
 let viewWidth = 800;
-let viewHeight = 800;
+let viewHeight = 600;
 
 // let domainX = [-120, -140]
 // let domainY = [32, 37]
@@ -156,19 +156,25 @@ return null;
 }
 
 edgesEnter.append('line')
-  .attr('x1', function(d) { return xScale(findNode(d[1])[1]); })
-  .attr('y1', function(d) { return yScale(findNode(d[1])[2]); })
-  .attr('x2', function(d) { return xScale(findNode(d[2])[1]); })
-  .attr('y2', function(d) { return yScale(findNode(d[2])[2]); })
+  .attr('x1', function(d) { 
+    return xScale(findNode(d[1])[1]); })
+  .attr('y1', function(d) { 
+    return yScale(findNode(d[1])[2]); })
+  .attr('x2', function(d) { 
+    return xScale(findNode(d[2])[1]); })
+  .attr('y2', function(d) { 
+    return yScale(findNode(d[2])[2]); })
   .attr('class', 'edges')
 
 edgesEnter.append('text')
   .attr('x', function(d){
-        x = findMiddleEdge(findNode(d[1]), findNode(d[2]))[0]
+        x = findMiddleEdge(findNode(d[1]), 
+          findNode(d[2]))[0]
         return xScale(x); 
   })
   .attr('y', function(d){
-        y = findMiddleEdge(findNode(d[1]), findNode(d[2]))[1]
+        y = findMiddleEdge(findNode(d[1]), 
+          findNode(d[2]))[1]
         return yScale(y);
   })
   .attr('class', 'edge-label')
@@ -199,14 +205,21 @@ let nodesEnter = svg.selectAll('nodes')
                 
 
 nodesEnter.append('rect')
-      .attr('x', function(d){ return xScale(d[1]) - 7.5; })
-      .attr('y', function(d){ return yScale(d[2]) - 7.5; })
+      .attr('x', function(d){
+        return xScale(d[1]) - 15;
+      })
+      .attr('y', function(d){
+        return yScale(d[2]) - 15; 
+      })
       .attr('class', 'nodes')
-      .attr('width', 15)
-      .attr('height', 15);
+      .attr('width', 30)
+      .attr('height', 30);
 
-nodesEnter.append('text').attr('x', function(d){ return xScale(d[1]); })
-  .attr('y', function(d){ return yScale(d[2]) + 3; })
+nodesEnter.append('text').attr('x', function(d){ 
+    return xScale(d[1]); 
+  })
+  .attr('y', function(d){ 
+    return yScale(d[2]) + 3; })
   .attr('class', 'node-label')
   .attr('text-anchor', 'middle')
   .text(function(a, i) { return "n" + a[0]; });
@@ -222,9 +235,9 @@ function findMiddleEdge(node1, node2) {
 
 let objects = [
 // [1, 1, 0.5],
-  [2, 2, 0.5],
-  [3, 2, 0.6],
-  [4, 3, 0.5]
+//  [2, 2, 0.5],
+//  [3, 2, 0.6],
+//  [4, 3, 0.5]
 ]
 
 let objectsEnter = svg.selectAll('objects')
@@ -233,21 +246,29 @@ let objectsEnter = svg.selectAll('objects')
 
 objectsEnter
   .append("circle")
-  .attr('cx', function(d){ return xScale(findLocation(d[1], d[2])[0]); })
-  .attr('cy', function(d){ return yScale(findLocation(d[1], d[2])[1]); })
+  .attr('cx', function(d){ 
+    return xScale(findLocation(d[1], d[2])[0]); 
+  })
+  .attr('cy', function(d){
+    return yScale(findLocation(d[1], d[2])[1]);
+  })
   .attr("r", 8)
   .attr("class", "objects")
 
 objectsEnter.append("text")
-  .attr('dx', function(d){ return xScale(findLocation(d[1], d[2])[0]); })
-  .attr('dy', function(d){ return yScale(findLocation(d[1], d[2])[1]) + 3; })
+  .attr('dx', function(d){
+    return xScale(findLocation(d[1], d[2])[0]); 
+  })
+  .attr('dy', function(d){
+    return yScale(findLocation(d[1], d[2])[1]) + 3; 
+  })
   .attr('text-anchor', 'middle')
   .attr('class', 'object-label')
-.append("tspan")
-  .text(function(d) { return "O"; })
-.append("tspan")
-  .attr("baseline-shift", "sub")
-  .text(function(d) { return d[0]; });
+  .append("tspan")
+    .text(function(d) { return "O"; })
+  .append("tspan")
+    .attr("baseline-shift", "sub")
+    .text(function(d) { return d[0]; });
 
 // query point
 function getNode(i) {
@@ -299,7 +320,8 @@ function findTPCoordinatesByNodeId(nodeSId, nodeEId, TP) {
   let selisihX = nodeE[1] - nodeS[1]
   let selisihY = nodeE[2] - nodeS[2]
 
-  let length = Math.sqrt(selisihX*selisihX + selisihY*selisihY)
+  let length = 
+    Math.sqrt(selisihX*selisihX + selisihY*selisihY)
 
   return TP.map(function(tp) {
     let ratio = tp / length
@@ -424,7 +446,8 @@ function getNodeLength(nodeSId, nodeEId) {
   let selisihX = nodeE[1] - nodeS[1]
   let selisihY = nodeE[2] - nodeS[2]
 
-  let length = Math.sqrt(selisihX*selisihX + selisihY*selisihY)
+  let length = 
+    Math.sqrt(selisihX*selisihX + selisihY*selisihY)
 
   return length
 }
@@ -496,8 +519,8 @@ function traverseQueryPoint(selector, nodeIds) {
             let deltaX = Math.abs(nodeNextX) - Math.abs(nodePrevX)
             let deltaY = Math.abs(nodeNextY) - Math.abs(nodePrevY)
 
-            let diffXY = Math.sqrt(diffX * diffX + diffY * diffY)
-            let deltaXY = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
+            let diffXY = Math.sqrt(diffX*diffX + diffY*diffY)
+           let deltaXY = Math.sqrt(deltaX*deltaX + deltaY*deltaY)
 
             let currentPosition = diffXY / deltaXY
 
@@ -523,15 +546,21 @@ function traverseQueryPoint(selector, nodeIds) {
                 if (dStart < realLength && realLength < dEnd) {
                   isSPFound = true
                   console.log(SP[i].sp)
+                  var divSP = document.getElementById('sp')
+                  divSP.textContent = SP[i].sp.join(", ")
                   break
                 }
               }
 
               if (!isSPFound) {
                 console.log([])
+                var divSP = document.getElementById('sp')
+                divSP.textContent = "-"
               }
             } else {
               console.log([])
+              var divSP = document.getElementById('sp')
+              divSP.textContent = "-"
             }
           }
 
@@ -549,7 +578,7 @@ let toTraverse = [20, 19, 18, 17, 16, 14, 11]
 
 function getData() {
   $.ajax({
-    url: 'http://localhost:8080/data',
+    url: 'http://10.151.36.22:8080/data',
   })
   .done(function(result) {
     let data = result.data
@@ -573,7 +602,7 @@ function getData() {
 
 function getObjects() {
   $.ajax({
-    url: 'http://localhost:8080/objects',
+    url: 'http://10.151.36.22:8080/objects',
   })
   .done(function(result) {
     let objects = result.data
@@ -629,7 +658,7 @@ function findSP() {
   }
 
   $.ajax({
-    url: 'http://localhost:8080/getPath?src=' + srcID + '&dst='+ dstID,
+    url: 'http://10.151.36.22:8080/getPath?src=' + srcID + '&dst='+ dstID,
   })
   .done(function(path) {
     traverseQueryPoint('#query', path)

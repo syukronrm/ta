@@ -87,6 +87,8 @@ object TestImport {
   }
 }
 
+
+// main object dari TA
 object TAQ {
   val mb: Int = 1024 * 1024
 
@@ -181,6 +183,9 @@ object TAQ {
   }
 }
 
+// Mulai dari baris ini
+// Proses pengujian/benchmarking menggunakan JMH
+// https://github.com/ktoso/sbt-jmh
 import org.openjdk.jmh.annotations.Scope
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
@@ -343,17 +348,6 @@ class BenchmarkBruteForce {
 
     naiveApproach.readDataGrid
 
-//    println("initial stream")
-//    (0 until N_OBJECTS).foreach { i =>
-//      //if (i % 20 == 0)
-//      println("runInitial " + i)
-//      val stream = streamsN.lift(i).get
-//      naiveApproach.naiveAlgorithm(stream)
-//      time = System.nanoTime()
-//      println("time " + (time - prevTime)/1000000)
-//      prevTime = System.nanoTime()
-//    }
-
     naiveApproach
   }
 
@@ -389,13 +383,6 @@ class BenchmarkBruteForce {
     index = N_OBJECTS
   }
 
-  @TearDown(Level.Iteration)
-  def tear(): Unit = {
-//    naive = naiveFixed.cloneMe()
-    //index = N_OBJECTS
-  }
-
-
   @Benchmark
   @BenchmarkMode(Array(Mode.AverageTime))
   @Timeout(time = 120, timeUnit = TimeUnit.MINUTES)
@@ -411,14 +398,6 @@ class BenchmarkBruteForce {
         index = N_OBJECTS
         streamsN.lift(index).get
     }
-//
-//    if (stream.isInstanceOf[RawObject]) {
-//      println("Index "+ index +" Stream RawObject " + stream.getId)
-//    }
-//
-//    if (stream.isInstanceOf[ExpiredObject]) {
-//      println("Index "+ index +" Stream Expire " + stream.getId)
-//    }
 
     naive.naiveAlgorithm(stream)
   }

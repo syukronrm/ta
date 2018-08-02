@@ -43,6 +43,7 @@ object TheAlgorithm {
     val objectList: java.util.List[Point2d] = rawObject.points.toList.asJava
     val rect = new Rect2d(objectList)
 
+    // grid yang sudah dimasukkan pada temporary tempGraph
     var addedGrid: Set[GridLocation] = Set()
 
     val edge = grid.getEdge(rawObject.edgeId).get
@@ -132,6 +133,7 @@ object TheAlgorithm {
 
   def computeTurningPoint(grid: Grid, edges: mutable.Map[Int, Edge], nodes: mutable.Map[Int, Node], updatedNodes: Set[Int], edge: Edge): Unit = {
     edges.values
+      // pilih edge yang berhubungan langsung dengan node yang terupdate
       .filter(e => updatedNodes.contains(e.i) | updatedNodes.contains(e.j) | e.id == edge.id)
       .foreach { e =>
         print(" e" + e.id)

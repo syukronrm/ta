@@ -35,4 +35,6 @@ object Constants {
 
   @inline var STATE: String = "INSERTION"
   // "DELETION"
+
+  @inline var IS_VISUALIZATION = false
 }

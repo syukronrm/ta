@@ -12,6 +12,7 @@ import ta.landmark._
 import ta.algorithm.TheAlgorithm._
 import ta.grid.Grid
 import visualize.ObjectConverter
+import java.text.DecimalFormat
 
 import scala.collection.JavaConverters._
 
@@ -292,10 +293,20 @@ object TurningPoint {
       }
     }
 
+    val formatter = new DecimalFormat("#.###")
+
+    println("  EdgeID " + edge.id)
     turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
-//    println(turningPointList)
-//    if (STATE == "DELETION")
+    turningPointList.foreach { tp =>
+      var objectIds = tp.SP.map(_.id)
+      println("  dari jarak " + formatter.format(tp.dStart) +
+                " hingga " + formatter.format(tp.dEnd) +
+                " SkylinePoint-nya adalah objek " + objectIds)
+    }
+
+    if (IS_VISUALIZATION)
       ObjectConverter.sendTP(turningPointList.toList, edge)
+
     turningPointList
   }
 }

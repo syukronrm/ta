@@ -29,11 +29,19 @@ object TheAlgorithm {
         grid.addObjectToEdge(_rawObject)
         grid.addRawObject(_rawObject)
 
+        if (ENV != "TESTING") {
+          println(" Insert object ID " + _rawObject.id)
+        }
+
         STATE = "INSERTION"
 
         _rawObject
       case ExpiredObject(id) =>
         val _rawObject = grid.getRawObject(id).get
+
+        if (ENV != "TESTING") {
+          println(" Delete object ID " + _rawObject.id)
+        }
 
         STATE = "DELETION"
 
@@ -136,7 +144,6 @@ object TheAlgorithm {
       // pilih edge yang berhubungan langsung dengan node yang terupdate
       .filter(e => updatedNodes.contains(e.i) | updatedNodes.contains(e.j) | e.id == edge.id)
       .foreach { e =>
-        print(" e" + e.id)
         val nodeS = nodes(e.i)
         val nodeE = nodes(e.j)
 

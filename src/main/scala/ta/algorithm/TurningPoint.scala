@@ -293,15 +293,17 @@ object TurningPoint {
       }
     }
 
-    val formatter = new DecimalFormat("#.###")
+    val formatter = new DecimalFormat("#.##")
 
-    println("  EdgeID " + edge.id)
-    turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
-    turningPointList.foreach { tp =>
-      var objectIds = tp.SP.map(_.id)
-      println("  dari jarak " + formatter.format(tp.dStart) +
-                " hingga " + formatter.format(tp.dEnd) +
-                " SkylinePoint-nya adalah objek " + objectIds)
+    if (ENV != "TESTING") {
+      println("  Update Edge, ID: " + edge.id)
+      turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
+      turningPointList.foreach { tp =>
+        var objectIds = tp.SP.map(_.id)
+        println("    - Dari jarak " + formatter.format(tp.dStart) +
+          "\thingga " + formatter.format(tp.dEnd) +
+          "\tSkylinePoint-nya adalah objek " + objectIds)
+      }
     }
 
     if (IS_VISUALIZATION)

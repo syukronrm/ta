@@ -3,7 +3,7 @@ package ta
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
-import ta.Constants.N_OBJECTS
+import ta.Constants._
 import ta.naive_approach.Naive
 
 import scala.collection.immutable.Set
@@ -18,6 +18,8 @@ class TestNaive {
   var naive: Naive = _
 
   def runInitial() = {
+    ENV = "TESTING"
+
     val cal_table_nodes: Set[RawNode] = Dataset.readNodePartial().toSet
     val cal_table_edges: Set[RawEdge] = Dataset.readEdgePartial().toSet
     val table_nodes: Set[RawNode] = cal_table_nodes

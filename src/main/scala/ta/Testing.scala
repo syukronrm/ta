@@ -46,9 +46,6 @@ class Testing {
       val stream = streamsN.lift(i).get
       _grid = TheAlgorithm(_grid, stream)
     }
-    ENV = "TESTING"
-    println("Start Update All SkyProb")
-    println("End Update All SkyProb")
 
     _grid.createDataNaive
 

@@ -96,7 +96,7 @@ object Main {
         println(tStart)
       }
 
-      println(stream.getId + " from " + (Constants.N_OBJECTS + Constants.TIME_EXPIRATION))
+      println("Stream " + stream.getId + " from " + streams.size)
       grid = TheAlgorithm(grid, stream)
 //      naiveApproach.naiveAlgorithm(stream)
       acc

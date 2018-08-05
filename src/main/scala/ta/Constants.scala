@@ -30,7 +30,7 @@ object Constants {
   // 2 : correlated
   // 3 : independence
 
-  @inline var ENV: String = "TESTING"
+  @inline var ENV: String = ""
   // "TESTING"
 
   @inline var STATE: String = "INSERTION"

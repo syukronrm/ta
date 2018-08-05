@@ -17,7 +17,7 @@ import java.text.DecimalFormat
 import scala.collection.JavaConverters._
 
 object TurningPoint {
-  def processLandmark(grid: Grid, nodeS: Node, edge: Edge, nodeE: Node): Vector[TP] = {
+  def processLandmark(grid: Grid, nodeS: Node, edge: Edge, nodeE: Node): Vector[TurningPointResult] = {
     val spNodeS = nodeS.objects.filter(o => !o.isImpossible)
     val spNodeE = nodeE.objects.filter(o => !o.isImpossible)
     val Se = edge.objects
@@ -215,7 +215,7 @@ object TurningPoint {
     }
   }
 
-  def processLandmark(landmarks: List[Landmark], spNodeS: Set[Object], spNodeE: Set[Object], edge: Edge): Vector[TP] = {
+  def processLandmark(landmarks: List[Landmark], spNodeS: Set[Object], spNodeE: Set[Object], edge: Edge): Vector[TurningPointResult] = {
     val sortedLandmarks = landmarks.sortBy(_.distance)
     val objects = spNodeS ++ spNodeE ++ edge.objects
 
@@ -227,7 +227,7 @@ object TurningPoint {
     var dStart: Double = 0
     val dEnd: Double = edge.length
 
-    var turningPointList = Vector[TP]()
+    var turningPointList = Vector[TurningPointResult]()
 
     def isObjectInSP(SP: Set[Object], objId: Int): Boolean = {
       SP.exists(_.id == objId)
@@ -248,7 +248,7 @@ object TurningPoint {
           if (!isLandmarkRightMidExist) {
             val obj = objects.find(_.id == l.objId).get
 
-            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
+            turningPointList = turningPointList :+ TurningPointResult(dStart, l.distance, SP)
 
             dStart = l.distance
             SP = SP + obj
@@ -257,7 +257,7 @@ object TurningPoint {
           if (isObjectInSP(SP, l.objId)) {
             val obj = SP.find(_.id == l.objId).get
 
-            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
+            turningPointList = turningPointList :+ TurningPointResult(dStart, l.distance, SP)
 
             dStart = l.distance
             SP = SP - obj
@@ -267,7 +267,7 @@ object TurningPoint {
             & isObjectInSP(SP, landmark.objDominatedId)) {
             val objDominated = SP.find(_.id == landmark.objDominatedId).get
 
-            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
+            turningPointList = turningPointList :+ TurningPointResult(dStart, l.distance, SP)
 
             dStart = l.distance
             SP = SP - objDominated
@@ -285,7 +285,7 @@ object TurningPoint {
           if (isObjectInSP(SP, l.objId) & !isLandmarkRightMidExist) {
             val objDominated = objects.find(_.id == landmark.objDominatedId).get
 
-            turningPointList = turningPointList :+ TP(dStart, l.distance, SP)
+            turningPointList = turningPointList :+ TurningPointResult(dStart, l.distance, SP)
 
             dStart = l.distance
             SP = SP + objDominated
@@ -297,7 +297,7 @@ object TurningPoint {
 
     if (ENV != "TESTING") {
       println("  Update Edge, ID: " + edge.id)
-      turningPointList = turningPointList :+ TP(dStart, dEnd, SP)
+      turningPointList = turningPointList :+ TurningPointResult(dStart, dEnd, SP)
       turningPointList.foreach { tp =>
         var objectIds = tp.SP.map(_.id)
         println("    - Dari jarak " + formatter.format(tp.dStart) +

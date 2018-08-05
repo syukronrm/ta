@@ -1,6 +1,6 @@
 package visualize
 
-import ta.algorithm.TP
+import ta.algorithm.TurningPointResult
 import ta.grid.Edge
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -24,7 +24,7 @@ object ObjectConverter {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  def TPtoEdgeSend(turningPoints: List[TP], edge: Edge): EdgeSend = {
+  def TPtoEdgeSend(turningPoints: List[TurningPointResult], edge: Edge): EdgeSend = {
     val SP = turningPoints.map { tp =>
       val ids = tp.SP.map(_.id).toList.sorted
       Interval(tp.dStart, tp.dEnd, ids)
@@ -61,7 +61,7 @@ object ObjectConverter {
       }
   }
 
-  def sendTP(turningPoints: List[TP], edge: Edge): Unit = {
+  def sendTP(turningPoints: List[TurningPointResult], edge: Edge): Unit = {
     val edgeSend = TPtoEdgeSend(turningPoints, edge)
 
     val uri = "http://localhost:8080/turningpoints"
